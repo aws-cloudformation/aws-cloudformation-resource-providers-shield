@@ -1,0 +1,45 @@
+// Best practice for Gradle multiproject configuration is to use root
+// project for all classpath injections. Add other plugin classpath
+// entries into this buildscript block before using in subprojects.
+buildscript {
+    apply plugin: 'brazil-gradle'
+    dependencies {
+        classpath brazilGradle.tool('GradleShadow')
+        classpath brazilGradle.tool('BrazilGradleQualityDefaults')
+    }
+}
+
+description "AWS CloudFormation Resource Providers - Shield"
+
+allprojects {
+    version "1.0-SNAPSHOT"
+}
+
+def projectsToRelease = ["aws-shield-shield"]
+
+// Sharing artifacts between projects should be done this way
+// See: https://docs.gradle.org/6.8.3/userguide/cross_project_publications.html#sec:simple-sharing-artifacts-between-projects
+configurations {
+    additionalArtifacts
+}
+
+dependencies {
+    // Attach each resource provider package to the configuration
+    projectsToRelease.each {proj ->
+        additionalArtifacts project(path: ":$proj", configuration: 'cfnPackageArchive')
+    }
+}
+
+// Copy all resource providers to folder `packaging_additional_published_artifacts` for deployment
+task assembleDeployment(type: Copy) {
+    description = 'Assemble resource providers for deployment'
+    assemble.dependsOn it
+
+    into file("build/packaging_additional_published_artifacts")
+    from configurations.additionalArtifacts
+}
+
+task release {
+    description = 'Build the complete project with all providers'
+    dependsOn assembleDeployment
+}

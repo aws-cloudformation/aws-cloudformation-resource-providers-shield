@@ -1,0 +1,4 @@
+rootProject.name = 'AWSCloudFormationResourceProvidersShield'
+
+include 'aws-shield-shield'
+
