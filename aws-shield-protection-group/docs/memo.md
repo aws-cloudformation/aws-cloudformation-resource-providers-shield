@@ -1,4 +1,4 @@
-# AWS::Shield::Protection Memo
+# AWS::Shield::ProtectionGroup Memo
 
 ## Syntax
 

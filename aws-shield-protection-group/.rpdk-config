@@ -1,10 +1,10 @@
 {
     "artifact_type": "RESOURCE",
-    "typeName": "AWS::Shield::Protection",
+    "typeName": "AWS::Shield::ProtectionGroup",
     "language": "java",
     "runtime": "java8",
-    "entrypoint": "software.amazon.shield.protection.HandlerWrapper::handleRequest",
-    "testEntrypoint": "software.amazon.shield.protection.HandlerWrapper::testEntrypoint",
+    "entrypoint": "software.amazon.shield.protectiongroup.HandlerWrapper::handleRequest",
+    "testEntrypoint": "software.amazon.shield.protectiongroup.HandlerWrapper::testEntrypoint",
     "settings": {
         "version": false,
         "subparser_name": null,
@@ -19,10 +19,10 @@
             "software",
             "amazon",
             "shield",
-            "protection"
+            "protectiongroup"
         ],
         "codegen_template_path": "default",
         "protocolVersion": "2.0.0"
     },
-    "executableEntrypoint": "software.amazon.shield.protection.HandlerWrapperExecutable"
+    "executableEntrypoint": "software.amazon.shield.protectiongroup.HandlerWrapperExecutable"
 }

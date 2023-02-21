@@ -5,9 +5,9 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>software.amazon.shield.protection</groupId>
-    <artifactId>aws-shield-protection-handler</artifactId>
-    <name>aws-shield-protection-handler</name>
+    <groupId>software.amazon.shield.protectiongroup</groupId>
+    <artifactId>aws-shield-protectiongroup-handler</artifactId>
+    <name>aws-shield-protectiongroup-handler</name>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -223,7 +223,7 @@
             <resource>
                 <directory>${project.basedir}</directory>
                 <includes>
-                    <include>aws-shield-protection.json</include>
+                    <include>aws-shield-protectiongroup.json</include>
                 </includes>
             </resource>
             <resource>

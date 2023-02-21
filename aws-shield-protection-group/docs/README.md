@@ -1,4 +1,4 @@
-# AWS::Shield::Protection
+# AWS::Shield::ProtectionGroup
 
 An example resource schema demonstrating some basic constructs and validation rules.
 
@@ -10,7 +10,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 
 <pre>
 {
-    "Type" : "AWS::Shield::Protection",
+    "Type" : "AWS::Shield::ProtectionGroup",
     "Properties" : {
         "<a href="#title" title="Title">Title</a>" : <i>String</i>,
         "<a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>" : <i>Boolean</i>,
@@ -28,7 +28,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 ### YAML
 
 <pre>
-Type: AWS::Shield::Protection
+Type: AWS::Shield::ProtectionGroup
 Properties:
     <a href="#title" title="Title">Title</a>: <i>String</i>
     <a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>: <i>Boolean</i>

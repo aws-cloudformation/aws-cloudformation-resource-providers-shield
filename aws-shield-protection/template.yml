@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: AWS SAM template for the AWS::Shield::Shield resource type
+Description: AWS SAM template for the AWS::Shield::Protection resource type
 
 Globals:
   Function:
@@ -11,14 +11,14 @@ Resources:
   TypeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: software.amazon.shield.shield.HandlerWrapper::handleRequest
+      Handler: software.amazon.shield.protection.HandlerWrapper::handleRequest
       Runtime: java8
-      CodeUri: ./target/aws-shield-shield-handler-1.0-SNAPSHOT.jar
+      CodeUri: ./target/aws-shield-protection-handler-1.0-SNAPSHOT.jar
 
   TestEntrypoint:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: software.amazon.shield.shield.HandlerWrapper::testEntrypoint
+      Handler: software.amazon.shield.protection.HandlerWrapper::testEntrypoint
       Runtime: java8
-      CodeUri: ./target/aws-shield-shield-handler-1.0-SNAPSHOT.jar
+      CodeUri: ./target/aws-shield-protection-handler-1.0-SNAPSHOT.jar
 

@@ -1,4 +1,4 @@
-# AWS::Shield::Protection Tag
+# AWS::Shield::ProtectionGroup Tag
 
 A key-value pair to associate with a resource.
 
