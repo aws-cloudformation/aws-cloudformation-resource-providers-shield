@@ -13,6 +13,7 @@
 		"/properties/ProactiveEngagementStatus",
 		"/properties/SubscriptionLimits"
 	],
+	"additionalProperties": false,
 	"properties": {
 		"SubscriptionArn": {
 			"description": "The ARN (Amazon Resource Name) of the subscription.",
@@ -40,8 +41,9 @@
 		"Limits": {
 			"description": "Specifies how many protections of a given type you can create.",
 			"type": "array",
-			"item": {
-				"$ref": "/definitions/Limit"
+			"insertionOrder": false,
+			"items": {
+				"$ref": "#/definitions/Limit"
 			}
 		},
 		"ProactiveEngagementStatus": {
@@ -50,7 +52,7 @@
 			"enum": ["ENABLED", "DISABLED", "PENDING"]
 		},
 		"SubscriptionLimits": {
-			"$ref": "/properties/SubscriptionLimits"
+			"$ref": "#/definitions/SubscriptionLimits"
 		}
 	},
 	"tagging" : {
@@ -60,6 +62,7 @@
 		"Limit": {
 			"description": "Specifies how many protections of a given type you can create.",
 			"type": "object",
+			"additionalProperties": false,
 			"properties": {
 				"Max": {
 					"description": "The maximum number of protections that can be created for the specified Type.",
@@ -74,13 +77,15 @@
 		"ProtectionLimits": {
 			"description": "Limits settings on protections for your subscription.",
 			"type": "object",
+			"additionalProperties": false,
 			"required": ["ProtectedResourceTypeLimits"],
 			"properties": {
 				"ProtectedResourceTypeLimits": {
 					"description": "The maximum number of resource types that you can specify in a protection.",
 					"type": "array",
-					"item": {
-						"$ref": "/definitions/Limit"
+					"insertionOrder": false,
+					"items": {
+						"$ref": "#/definitions/Limit"
 					}
 				}
 			}
@@ -88,16 +93,18 @@
 		"ProtectionGroupPatternTypeLimits": {
 			"description": "Limits settings by pattern type in the protection groups for your subscription.",
 			"type": "object",
+			"additionalProperties": false,
 			"required": ["ArbitraryPatternLimits"],
 			"properties": {
 				"ArbitraryPatternLimits": {
-					"$ref": "/properties/ProtectionGroupArbitraryPatternLimits"
+					"$ref": "#/definitions/ProtectionGroupArbitraryPatternLimits"
 				}
 			}
 		},
 		"ProtectionGroupArbitraryPatternLimits": {
 			"description": "Limits settings on protection groups with arbitrary pattern type.",
 			"type": "object",
+			"additionalProperties": false,
 			"required": ["MaxMembers"],
 			"properties": {
 				"MaxMembers": {
@@ -109,22 +116,24 @@
 		"SubscriptionLimits": {
 			"description": "Limits settings for your subscription.",
 			"type": "object",
+			"additionalProperties": false,
 			"required": [
 				"ProtectionGroupLimits",
 				"ProtectionLimits"
 			],
 			"properties": {
 				"ProtectionGroupLimits": {
-					"$ref": "/definitions/ProtectionGroupLimits"
+					"$ref": "#/definitions/ProtectionGroupLimits"
 				},
 				"ProtectionLimits": {
-					"$ref": "/definitions/ProtectionLimits"
+					"$ref": "#/definitions/ProtectionLimits"
 				}
 			}
 		},
 		"ProtectionGroupLimits": {
 			"description": "Limits settings on protection groups for your subscription.",
 			"type": "object",
+			"additionalProperties": false,
 			"required": ["MaxProtectionGroups", "PatternTypeLimits"],
 			"properties": {
 				"MaxProtectionGroups": {
@@ -132,7 +141,7 @@
 					"type": "integer"
 				},
 				"PatternTypeLimits": {
-					"$ref": "/properties/ProtectionGroupPatternTypeLimits"
+					"$ref": "#/definitions/ProtectionGroupPatternTypeLimits"
 				}
 			}
 		}
