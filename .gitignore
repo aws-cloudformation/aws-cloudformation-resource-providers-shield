@@ -22,3 +22,18 @@ rpdk.log*
 # contains credentials
 sam-tests/
 
+# VSCode configurations
+.vscode/
+
+# Build
+build
+
+# Generated Files
+.factorypath
+.settings/
+.gradle/
+.hypothesis
+*/resource-role.yaml
+
+# Docs
+docs/
