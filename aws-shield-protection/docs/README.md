@@ -1,6 +1,6 @@
 # AWS::Shield::Protection
 
-An example resource schema demonstrating some basic constructs and validation rules.
+Enables AWS Shield Advanced for a specific AWS resource. The resource can be an Amazon CloudFront distribution, Amazon Route 53 hosted zone, AWS Global Accelerator standard accelerator, Elastic IP Address, Application Load Balancer, or a Classic Load Balancer. You can protect Amazon EC2 instances and Network Load Balancers by association with protected Amazon EC2 Elastic IP addresses.
 
 ## Syntax
 
@@ -12,14 +12,10 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 {
     "Type" : "AWS::Shield::Protection",
     "Properties" : {
-        "<a href="#title" title="Title">Title</a>" : <i>String</i>,
-        "<a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>" : <i>Boolean</i>,
-        "<a href="#duedate" title="DueDate">DueDate</a>" : <i>String</i>,
-        "<a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>" : <i>String</i>,
-        "<a href="#memo" title="Memo">Memo</a>" : <i><a href="memo.md">Memo</a></i>,
-        "<a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>" : <i><a href="memo.md">Memo</a></i>,
-        "<a href="#testcode" title="TestCode">TestCode</a>" : <i>String</i>,
-        "<a href="#authors" title="Authors">Authors</a>" : <i>[ String, ... ]</i>,
+        "<a href="#name" title="Name">Name</a>" : <i>String</i>,
+        "<a href="#resourcearn" title="ResourceArn">ResourceArn</a>" : <i>String</i>,
+        "<a href="#healthcheckids" title="HealthCheckIds">HealthCheckIds</a>" : <i>[ String, ... ]</i>,
+        "<a href="#applicationlayerautomaticresponseconfiguration" title="ApplicationLayerAutomaticResponseConfiguration">ApplicationLayerAutomaticResponseConfiguration</a>" : <i><a href="applicationlayerautomaticresponseconfiguration.md">ApplicationLayerAutomaticResponseConfiguration</a></i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>
     }
 }
@@ -30,88 +26,50 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 <pre>
 Type: AWS::Shield::Protection
 Properties:
-    <a href="#title" title="Title">Title</a>: <i>String</i>
-    <a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>: <i>Boolean</i>
-    <a href="#duedate" title="DueDate">DueDate</a>: <i>String</i>
-    <a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>: <i>String</i>
-    <a href="#memo" title="Memo">Memo</a>: <i><a href="memo.md">Memo</a></i>
-    <a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>: <i><a href="memo.md">Memo</a></i>
-    <a href="#testcode" title="TestCode">TestCode</a>: <i>String</i>
-    <a href="#authors" title="Authors">Authors</a>: <i>
+    <a href="#name" title="Name">Name</a>: <i>String</i>
+    <a href="#resourcearn" title="ResourceArn">ResourceArn</a>: <i>String</i>
+    <a href="#healthcheckids" title="HealthCheckIds">HealthCheckIds</a>: <i>
       - String</i>
+    <a href="#applicationlayerautomaticresponseconfiguration" title="ApplicationLayerAutomaticResponseConfiguration">ApplicationLayerAutomaticResponseConfiguration</a>: <i><a href="applicationlayerautomaticresponseconfiguration.md">ApplicationLayerAutomaticResponseConfiguration</a></i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
 </pre>
 
 ## Properties
 
-#### Title
+#### Name
 
-The title of the TPS report is a mandatory element.
-
-_Required_: Yes
-
-_Type_: String
-
-_Minimum Length_: <code>20</code>
-
-_Maximum Length_: <code>250</code>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### CoverSheetIncluded
-
-Required for all TPS Reports submitted after 2/19/1999
-
-_Required_: No
-
-_Type_: Boolean
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### DueDate
-
-_Required_: No
-
-_Type_: String
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### ApprovalDate
-
-_Required_: No
-
-_Type_: String
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### Memo
-
-_Required_: No
-
-_Type_: <a href="memo.md">Memo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### SecondCopyOfMemo
-
-_Required_: No
-
-_Type_: <a href="memo.md">Memo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### TestCode
+Friendly name for the Protection.
 
 _Required_: Yes
 
 _Type_: String
 
-_Allowed Values_: <code>NOT_STARTED</code> | <code>CANCELLED</code>
+_Minimum Length_: <code>1</code>
 
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+_Maximum Length_: <code>128</code>
 
-#### Authors
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
+#### ResourceArn
+
+The ARN (Amazon Resource Name) of the resource to be protected.
+
+_Required_: Yes
+
+_Type_: String
+
+_Minimum Length_: <code>1</code>
+
+_Maximum Length_: <code>2048</code>
+
+_Pattern_: <code>^arn:aws.*</code>
+
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
+#### HealthCheckIds
+
+The unique identifier (ID) for the Route 53 health check that's associated with the protection.
 
 _Required_: No
 
@@ -119,9 +77,19 @@ _Type_: List of String
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
+#### ApplicationLayerAutomaticResponseConfiguration
+
+The automatic application layer DDoS mitigation settings for a Protection. This configuration determines whether Shield Advanced automatically manages rules in the web ACL in order to respond to application layer events that Shield Advanced determines to be DDoS attacks.
+
+_Required_: No
+
+_Type_: <a href="applicationlayerautomaticresponseconfiguration.md">ApplicationLayerAutomaticResponseConfiguration</a>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
 #### Tags
 
-An array of key-value pairs to apply to this resource.
+One or more tag key-value pairs for the Protection object.
 
 _Required_: No
 
@@ -133,7 +101,7 @@ _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormati
 
 ### Ref
 
-When you pass the logical ID of this resource to the intrinsic `Ref` function, Ref returns the TPSCode.
+When you pass the logical ID of this resource to the intrinsic `Ref` function, Ref returns the ProtectionArn.
 
 ### Fn::GetAtt
 
@@ -141,7 +109,11 @@ The `Fn::GetAtt` intrinsic function returns a value for a specified attribute of
 
 For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::GetAtt](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html).
 
-#### TPSCode
+#### ProtectionId
 
-A TPS Code is automatically generated on creation and assigned as the unique identifier.
+The unique identifier (ID) of the protection.
+
+#### ProtectionArn
+
+The ARN (Amazon Resource Name) of the protection.
 
