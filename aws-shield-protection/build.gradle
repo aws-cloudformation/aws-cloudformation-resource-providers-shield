@@ -24,6 +24,11 @@ processResources {
     }
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 task copySchema(type: Copy) {
     description = 'Copy source schema to target directory'
 
@@ -38,6 +43,7 @@ dependencies {
     testImplementation brazilGradle.testbuild()
     compileOnly brazilGradle.tool('Lombok')
     annotationProcessor brazilGradle.tool('Lombok')
+    compile project(':aws-shield-common')
 }
 
 test {

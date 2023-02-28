@@ -3,4 +3,4 @@ rootProject.name = 'AWSCloudFormationResourceProvidersShield'
 // TODO: add aws-shield-subscription
 include 'aws-shield-protection'
 include 'aws-shield-protectiongroup'
-
+include 'aws-shield-common'

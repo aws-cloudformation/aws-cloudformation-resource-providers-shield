@@ -1,0 +1,28 @@
+
+plugins {
+    id 'brazil-gradle'
+    id 'brazil-quality-defaults'
+    id 'java'
+    id 'jacoco'
+    id 'com.github.johnrengelman.shadow'
+}
+
+description 'CloudFormation Resource Provider - <AWS::Shield::Common>'
+
+// Include RPDK generated source by `cfn generate`
+sourceSets.main.java.srcDir 'target/generated-sources/rpdk'
+
+dependencies {
+    implementation brazilGradle.build()
+    testImplementation brazilGradle.testbuild()
+    compileOnly brazilGradle.tool('Lombok')
+    annotationProcessor brazilGradle.tool('Lombok')
+}
+
+// shadowJar overtakes the jar output location
+jar.enabled = true
+
+// Delete target folder for clean
+clean {
+    delete 'target'
+}
