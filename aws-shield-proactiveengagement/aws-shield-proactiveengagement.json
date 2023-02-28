@@ -1,0 +1,54 @@
+{
+  "typeName": "AWS::Shield::ProactiveEngagement",
+  "description": "Authorizes the Shield Response Team (SRT) to use email and phone to notify contacts about escalations to the SRT and to initiate proactive customer support.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
+  "primaryIdentifier": [ "/properties/AccountId" ],
+  "readOnlyProperties": [ "/properties/AccountId" ],
+  "additionalProperties": false,
+  "required": [
+    "ProactiveEngagementStatus",
+    "EmergencyContactList"
+  ],
+  "properties": {
+    "AccountId": {
+      "type": "string"
+    },
+    "ProactiveEngagementStatus": {
+      "description": "If `ENABLED`, the Shield Response Team (SRT) will use email and phone to notify contacts about escalations to the SRT and to initiate proactive customer support.\nIf `DISABLED`, the SRT will not proactively notify contacts about escalations or to initiate proactive customer support.",
+      "type": "string",
+      "enum": ["ENABLED", "DISABLED"]
+    },
+    "EmergencyContactList": {
+      "description": "A list of email addresses and phone numbers that the Shield Response Team (SRT) can use to contact you for escalations to the SRT and to initiate proactive customer support.\nTo enable proactive engagement, the contact list must include at least one phone number.",
+      "type": "array",
+      "insertionOrder": false,
+      "minItems": 0,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["EmailAddress"],
+        "properties": {
+          "ContactNotes": {
+            "description": "Additional notes regarding the contact.",
+            "pattern": "^[\\w\\s\\.\\-,:/()+@]*$",
+            "type": "string"
+          },
+          "EmailAddress": {
+            "description": "The email address for the contact.",
+            "pattern": "^\\S+@\\S+\\.\\S+$",
+            "type": "string"
+          },
+          "PhoneNumber": {
+            "description": "The phone number for the contact",
+            "pattern": "^\\+[1-9]\\d{1,14}$",
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tagging" : {
+    "taggable": false
+  }
+}
