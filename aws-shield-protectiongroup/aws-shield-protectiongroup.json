@@ -125,5 +125,36 @@
 				}
 			}
 		}
+	},
+	"handlers": {
+		"list": {
+			"permissions": [
+				"shield:ListProtectionGroups",
+				"shield:ListTagsForResource"
+			]
+		},
+		"read": {
+			"permissions": [
+				"shield:DescribeProtectionGroup",
+				"shield:ListTagsForResource"
+			]
+		},
+		"create": {
+			"permissions": [
+				"shield:CreateProtectionGroup",
+				"shield:DescribeProtectionGroup"
+			]
+		},
+		"delete": {
+			"permissions": [
+				"shield:DeleteProtectionGroup"
+			]
+		},
+		"update": {
+			"permissions": [
+				"shield:UpdateProtectionGroup",
+				"shield:DescribeProtectionGroup"
+			]
+		}
 	}
 }

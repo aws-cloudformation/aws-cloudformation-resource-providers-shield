@@ -15,7 +15,8 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sdk.cloudformation.version>1.12.412</sdk.cloudformation.version>
-        <sdk.shield.version>2.20.9</sdk.shield.version>
+        <sdk.shield.version>2.20.12</sdk.shield.version>
+        <org.projectlombok.version>1.18.26</org.projectlombok.version>
     </properties>
 
     <dependencies>
@@ -37,7 +38,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
+            <version>${org.projectlombok.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
