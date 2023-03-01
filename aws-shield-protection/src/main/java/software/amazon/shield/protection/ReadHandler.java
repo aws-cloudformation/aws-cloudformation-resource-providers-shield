@@ -1,7 +1,5 @@
 package software.amazon.shield.protection;
 
-import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;

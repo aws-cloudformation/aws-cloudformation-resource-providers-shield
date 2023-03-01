@@ -1,5 +1,6 @@
 package software.amazon.shield.protection;
 
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListProtectionsRequest;
 import software.amazon.awssdk.services.shield.model.ListProtectionsResponse;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@RequiredArgsConstructor
 public class ListHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;

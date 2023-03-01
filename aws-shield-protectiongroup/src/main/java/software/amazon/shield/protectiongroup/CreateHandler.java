@@ -2,6 +2,7 @@ package software.amazon.shield.protectiongroup;
 
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.CreateProtectionGroupRequest;
 import software.amazon.awssdk.services.shield.model.Tag;
@@ -14,6 +15,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
 
+@RequiredArgsConstructor
 public class CreateHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;
@@ -65,6 +67,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))
+                    .message(e.getMessage())
                     .build();
         }
     }
