@@ -1,5 +1,6 @@
 package software.amazon.shield.protectiongroup;
 
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListProtectionGroupsRequest;
 import software.amazon.awssdk.services.shield.model.ListProtectionGroupsResponse;
@@ -9,6 +10,7 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
+import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.common.HandlerHelper;
 
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@RequiredArgsConstructor
 public class ListHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;
@@ -52,6 +55,8 @@ public class ListHandler extends BaseHandler<CallbackContext> {
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
+                    .errorCode(ExceptionConverter.convertToErrorCode(e))
+                    .message(e.getMessage())
                     .build();
         }
     }

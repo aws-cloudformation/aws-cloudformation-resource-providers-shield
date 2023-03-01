@@ -1,5 +1,6 @@
 package software.amazon.shield.protectiongroup;
 
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DeleteProtectionGroupRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
@@ -10,6 +11,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
 
+@RequiredArgsConstructor
 public class DeleteHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;
@@ -43,6 +45,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))
+                    .message(e.getMessage())
                     .build();
         }
     }
