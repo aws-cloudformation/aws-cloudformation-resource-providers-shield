@@ -1,5 +1,8 @@
 package software.amazon.shield.protection;
 
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
@@ -16,6 +19,8 @@ import software.amazon.shield.common.HandlerHelper;
 
 @RequiredArgsConstructor
 public class ReadHandler extends BaseHandler<CallbackContext> {
+
+    private static final String HEALTH_CHECK_ARN_TEMPLATE = "arn:aws:route53:::healthcheck/";
 
     private final ShieldClient client;
 
@@ -76,6 +81,28 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                                                 .key(tag.key())
                                                 .value(tag.value())
                                                 .build()))
+                .healthCheckArns(
+                        protection.healthCheckIds()
+                                .stream()
+                                .map(x -> HEALTH_CHECK_ARN_TEMPLATE + x)
+                                .collect(Collectors.toList()))
+                .applicationLayerAutomaticResponseConfiguration(
+                        translateAppLayerAutoResponseConfig(protection))
+                .build();
+    }
+
+    private static ApplicationLayerAutomaticResponseConfiguration translateAppLayerAutoResponseConfig(Protection protection) {
+
+        String status = protection.applicationLayerAutomaticResponseConfiguration().statusAsString();
+        Action action =
+                protection.applicationLayerAutomaticResponseConfiguration().action().block() != null
+                        ? Action.builder().block(Maps.newHashMap()).build()
+                        : Action.builder().count(Maps.newHashMap()).build();
+
+
+        return ApplicationLayerAutomaticResponseConfiguration.builder()
+                .action(action)
+                .status(status)
                 .build();
     }
 }

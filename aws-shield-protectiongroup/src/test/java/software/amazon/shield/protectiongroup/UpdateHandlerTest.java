@@ -23,6 +23,9 @@ public class UpdateHandlerTest {
     @Mock
     private Logger logger;
 
+    private UpdateHandler deleteHandler;
+    private ResourceModel resourceModel;
+
     @BeforeEach
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);

@@ -118,6 +118,7 @@
     "create": {
       "permissions": [
         "shield:CreateProtection",
+        "shield:DescribeProtection",
         "shield:EnableApplicationLayerAutomaticResponse",
         "shield:AssociateHealthCheck"
       ]
@@ -135,6 +136,7 @@
     },
     "update": {
       "permissions": [
+        "shield:DescribeProtection",
         "shield:AssociateHealthCheck",
         "shield:DisassociateHealthCheck",
         "shield:EnableApplicationLayerAutomaticResponse",

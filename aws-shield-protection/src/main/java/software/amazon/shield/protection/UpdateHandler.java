@@ -1,6 +1,7 @@
 package software.amazon.shield.protection;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.NonNull;
@@ -9,13 +10,12 @@ import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.AssociateHealthCheckRequest;
 import software.amazon.awssdk.services.shield.model.BlockAction;
 import software.amazon.awssdk.services.shield.model.CountAction;
-import software.amazon.awssdk.services.shield.model.CreateProtectionRequest;
-import software.amazon.awssdk.services.shield.model.CreateProtectionRequest.Builder;
-import software.amazon.awssdk.services.shield.model.CreateProtectionResponse;
+import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
+import software.amazon.awssdk.services.shield.model.DisableApplicationLayerAutomaticResponseRequest;
+import software.amazon.awssdk.services.shield.model.DisassociateHealthCheckRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
+import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
-import software.amazon.awssdk.services.shield.model.Tag;
-import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -25,11 +25,13 @@ import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
 
 @RequiredArgsConstructor
-public class CreateHandler extends BaseHandler<CallbackContext> {
+public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;
 
-    public CreateHandler() {
+    private static final String healthCheckArnTemplate = "arn:aws:route53:::healthcheck/";
+
+    public UpdateHandler() {
         this.client = CustomerAPIClientBuilder.getClient();
     }
 
@@ -43,23 +45,18 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            final CreateProtectionRequest.Builder createProtectionRequest =
-                    CreateProtectionRequest.builder()
-                            .name(model.getName())
-                            .resourceArn(model.getResourceArn());
+            final Protection protection = getProtection(model, proxy);
 
-            populateTags(model, createProtectionRequest);
+            // 1. associate/disassociate healthChecks
+            updateHealthCheckAssociation(model, protection, proxy);
 
-            final CreateProtectionResponse createProtectionResponse =
-                    proxy.injectCredentialsAndInvokeV2(createProtectionRequest.build(), this.client::createProtection);
-
-            associateHealthChecks(model.getHealthCheckArns(), createProtectionResponse.protectionId(), proxy);
-            enableApplicationLayerAutomaticResponse(
+            // 2. appLayerAutoResponseConfig
+            updateAppLayerAutoResponseConfig(
                     model.getApplicationLayerAutomaticResponseConfiguration(),
                     model.getResourceArn(),
                     proxy);
 
-            return readProtection(createProtectionResponse.protectionId(), proxy, logger);
+            return readProtection(protection.id(), proxy, logger);
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
@@ -70,60 +67,98 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         }
     }
 
-    private static void populateTags(final ResourceModel model, final Builder createProtectionRequest) {
+    private Protection getProtection(final ResourceModel model, final AmazonWebServicesClientProxy proxy) {
 
-        if (!CollectionUtils.isNullOrEmpty(model.getTags())) {
-            createProtectionRequest.tags(
-                    model.getTags()
-                            .stream()
-                            .map(tag ->
-                                    Tag.builder()
-                                            .key(tag.getKey())
-                                            .value(tag.getValue())
-                                            .build())
-                            .collect(Collectors.toList())
-            );
-        }
+        final DescribeProtectionRequest describeProtectionRequest =
+                DescribeProtectionRequest.builder()
+                        .protectionId(model.getProtectionId())
+                        .resourceArn(model.getResourceArn())
+                        .build();
+
+        return proxy
+                .injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection)
+                .protection();
+    }
+
+    private void updateHealthCheckAssociation(
+            @NonNull final ResourceModel model,
+            @NonNull final Protection protection,
+            @NonNull final AmazonWebServicesClientProxy proxy) {
+
+        final Set<String> healthCheckArnsBefore =
+                protection.healthCheckIds()
+                        .stream()
+                        .map(x -> healthCheckArnTemplate + x)
+                        .collect(Collectors.toSet());
+
+        final Set<String> healthCheckArnsAfter = new HashSet<>(model.getHealthCheckArns());
+
+        final Set<String> intersection =
+                healthCheckArnsBefore
+                        .stream()
+                        .filter(healthCheckArnsAfter::contains)
+                        .collect(Collectors.toSet());
+
+        healthCheckArnsBefore.removeAll(intersection);
+        healthCheckArnsAfter.removeAll(intersection);
+
+        associateHealthChecks(protection.id(), healthCheckArnsAfter, proxy);
+        disassociateHealthChecks(protection.id(), healthCheckArnsBefore, proxy);
     }
 
     private void associateHealthChecks(
-            final List<String> healthCheckArns,
             @NonNull final String protectionId,
-            @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
-            return;
-        }
+            final Set<String> healthCheckArns,
+            final AmazonWebServicesClientProxy proxy) {
 
         healthCheckArns.forEach(
                 arn -> {
-                    final AssociateHealthCheckRequest associateHealthCheckRequest =
+                    final AssociateHealthCheckRequest request =
                             AssociateHealthCheckRequest.builder()
                                     .protectionId(protectionId)
                                     .healthCheckArn(arn)
                                     .build();
 
                     proxy.injectCredentialsAndInvokeV2(
-                            associateHealthCheckRequest,
+                            request,
                             this.client::associateHealthCheck);
                 }
         );
     }
 
-    private void enableApplicationLayerAutomaticResponse(
-            final ApplicationLayerAutomaticResponseConfiguration appLayerAutoResponseConfig,
+    private void disassociateHealthChecks(
+            @NonNull final String protectionId,
+            final Set<String> healthCheckArns,
+            final AmazonWebServicesClientProxy proxy) {
+
+        healthCheckArns.forEach(
+                arn -> {
+                    final DisassociateHealthCheckRequest request =
+                            DisassociateHealthCheckRequest.builder()
+                                    .protectionId(protectionId)
+                                    .healthCheckArn(arn)
+                                    .build();
+
+                    proxy.injectCredentialsAndInvokeV2(
+                            request,
+                            this.client::disassociateHealthCheck);
+                }
+        );
+    }
+
+    private void updateAppLayerAutoResponseConfig(
+            final ApplicationLayerAutomaticResponseConfiguration config,
             @NonNull final String resourceArn,
             @NonNull final AmazonWebServicesClientProxy proxy) {
 
-        if (appLayerAutoResponseConfig == null
-                || appLayerAutoResponseConfig.getStatus().equals("DISABLED")) {
-            return;
-        }
-
-        if (appLayerAutoResponseConfig.getAction().getBlock() != null) {
-            enableAppLayerAutoResponseWithBlockAction(resourceArn, proxy);
+        if (config.getStatus().equals("ENABLED")) {
+            if (config.getAction().getBlock() != null) {
+                enableAppLayerAutoResponseWithBlockAction(resourceArn, proxy);
+            } else {
+                enableAppLayerAutoResponseWithCountAction(resourceArn, proxy);
+            }
         } else {
-            enableAppLayerAutoResponseWithCountAction(resourceArn, proxy);
+            disableAppLayerAutoResponse(resourceArn, proxy);
         }
     }
 
@@ -155,6 +190,17 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                                         .build())
                         .build(),
                 this.client::enableApplicationLayerAutomaticResponse);
+    }
+
+    private void disableAppLayerAutoResponse(
+            @NonNull final String resourceArn,
+            @NonNull final AmazonWebServicesClientProxy proxy) {
+
+        proxy.injectCredentialsAndInvokeV2(
+                DisableApplicationLayerAutomaticResponseRequest.builder()
+                        .resourceArn(resourceArn)
+                        .build(),
+                this.client::disableApplicationLayerAutomaticResponse);
     }
 
     private ProgressEvent<ResourceModel, CallbackContext> readProtection(
