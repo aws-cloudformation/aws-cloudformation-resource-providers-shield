@@ -41,12 +41,13 @@
             "maxLength": 2048,
             "pattern": "^arn:aws.*"
         },
-        "HealthCheckIds": {
-            "description": "The unique identifier (ID) for the Route 53 health check that's associated with the protection.",
+        "HealthCheckArns": {
+            "description": "The Amazon Resource Names (ARNs) of the health check to associate with the protection.",
             "type": "array",
             "insertionOrder": false,
             "items": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^arn:aws:route53:::healthcheck/\\S{36}$"
             }
         },
         "ApplicationLayerAutomaticResponseConfiguration": {
