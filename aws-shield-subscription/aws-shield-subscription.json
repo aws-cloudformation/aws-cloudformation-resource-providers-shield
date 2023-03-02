@@ -8,10 +8,12 @@
 		"/properties/StartTime",
 		"/properties/EndTime",
 		"/properties/TimeCommitmentInSeconds",
-		"/properties/AutoRenew",
 		"/properties/Limits",
 		"/properties/ProactiveEngagementStatus",
 		"/properties/SubscriptionLimits"
+	],
+	"required": [
+		"AutoRenew"
 	],
 	"additionalProperties": false,
 	"properties": {
@@ -35,7 +37,7 @@
 		},
 		"AutoRenew": {
 			"type": "string",
-			"enum": ["ENABLED"],
+			"enum": ["ENABLED", "DISABLED"],
 			"description": "If ENABLED, the subscription will be automatically renewed at the end of the existing subscription period."
 		},
 		"Limits": {
