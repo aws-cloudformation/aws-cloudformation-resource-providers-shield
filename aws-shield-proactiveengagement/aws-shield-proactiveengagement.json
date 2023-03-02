@@ -4,6 +4,9 @@
   "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
   "primaryIdentifier": [ "/properties/AccountId" ],
   "readOnlyProperties": [ "/properties/AccountId" ],
+  "tagging" : {
+    "taggable": false
+  },
   "additionalProperties": false,
   "required": [
     "ProactiveEngagementStatus",
@@ -48,7 +51,35 @@
       }
     }
   },
-  "tagging" : {
-    "taggable": false
+  "handlers": {
+    "create": {
+      "permissions": [
+        "shield:DescribeSubscription",
+        "shield:AssociateProactiveEngagementDetails"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "shield:UpdateEmergencyContactSettings",
+        "shield:DisableProactiveEngagement"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "shield:DescribeSubscription"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "shield:UpdateEmergencyContactSettings",
+        "shield:EnableProactiveEngagement",
+        "shield:DisableProactiveEngagement"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "shield:DescribeSubscription"
+      ]
+    }
   }
 }
