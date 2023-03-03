@@ -57,9 +57,7 @@
       ]
     },
     "list": {
-      "permissions": [
-        "shield:DescribeDRTAccess"
-      ]
+      "permissions": []
     }
   }
 }
