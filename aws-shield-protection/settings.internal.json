@@ -1,0 +1,5 @@
+{
+  "FasPolicyPath": {
+    "aws": "/policies/AuthRuntime/authNPolicy/cloudformation/aws-shield-protection.2023-03-06-19-50-22"
+  }
+}
