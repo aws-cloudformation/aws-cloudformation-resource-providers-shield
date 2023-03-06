@@ -1,149 +1,168 @@
 {
-	"typeName": "AWS::Shield::Subscription",
-	"description": "AWS Shield Advanced Subscription.",
-	"sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
-	"primaryIdentifier": [ "/properties/SubscriptionArn" ],
-	"readOnlyProperties": [
-		"/properties/SubscriptionArn",
-		"/properties/StartTime",
-		"/properties/EndTime",
-		"/properties/TimeCommitmentInSeconds",
-		"/properties/AutoRenew",
-		"/properties/Limits",
-		"/properties/ProactiveEngagementStatus",
-		"/properties/SubscriptionLimits"
-	],
-	"additionalProperties": false,
-	"properties": {
-		"SubscriptionArn": {
-			"description": "The ARN (Amazon Resource Name) of the subscription.",
-			"type": "string"
-		},
-		"StartTime": {
-			"description": "The start time of the subscription, in Unix time in seconds.",
-			"type": "string",
-			"format": "date-time"
-		},
-		"EndTime": {
-			"description": "The date and time your subscription will end.",
-			"type": "string",
-			"format": "date-time"
-		},
-		"TimeCommitmentInSeconds": {
-			"description": "The length, in seconds, of the AWS Shield Advanced subscription for the account.",
-			"type": "integer"
-		},
-		"AutoRenew": {
-			"type": "string",
-			"enum": ["ENABLED"],
-			"description": "If ENABLED, the subscription will be automatically renewed at the end of the existing subscription period."
-		},
-		"Limits": {
-			"description": "Specifies how many protections of a given type you can create.",
-			"type": "array",
-			"insertionOrder": false,
-			"items": {
-				"$ref": "#/definitions/Limit"
-			}
-		},
-		"ProactiveEngagementStatus": {
-			"description": "If `ENABLED`, the Shield Response Team (SRT) will use email and phone to notify contacts about escalations to the SRT and to initiate proactive customer support.\nIf `PENDING`, you have requested proactive engagement and the request is pending. The status changes to ENABLED when your request is fully processed.\nIf `DISABLED`, the SRT will not proactively notify contacts about escalations or to initiate proactive customer support.",
-			"type": "string",
-			"enum": ["ENABLED", "DISABLED", "PENDING"]
-		},
-		"SubscriptionLimits": {
-			"$ref": "#/definitions/SubscriptionLimits"
-		}
-	},
-	"tagging" : {
-		"taggable": false
-	},
-	"definitions": {
-		"Limit": {
-			"description": "Specifies how many protections of a given type you can create.",
-			"type": "object",
-			"additionalProperties": false,
-			"properties": {
-				"Max": {
-					"description": "The maximum number of protections that can be created for the specified Type.",
-					"type": "integer"
-				},
-				"Type": {
-					"description": "The type of protection",
-					"type": "string"
-				}
-			}
-		},
-		"ProtectionLimits": {
-			"description": "Limits settings on protections for your subscription.",
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["ProtectedResourceTypeLimits"],
-			"properties": {
-				"ProtectedResourceTypeLimits": {
-					"description": "The maximum number of resource types that you can specify in a protection.",
-					"type": "array",
-					"insertionOrder": false,
-					"items": {
-						"$ref": "#/definitions/Limit"
-					}
-				}
-			}
-		},
-		"ProtectionGroupPatternTypeLimits": {
-			"description": "Limits settings by pattern type in the protection groups for your subscription.",
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["ArbitraryPatternLimits"],
-			"properties": {
-				"ArbitraryPatternLimits": {
-					"$ref": "#/definitions/ProtectionGroupArbitraryPatternLimits"
-				}
-			}
-		},
-		"ProtectionGroupArbitraryPatternLimits": {
-			"description": "Limits settings on protection groups with arbitrary pattern type.",
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["MaxMembers"],
-			"properties": {
-				"MaxMembers": {
-					"description": "The maximum number of resources you can specify for a single arbitrary pattern in a protection group",
-					"type": "integer"
-				}
-			}
-		},
-		"SubscriptionLimits": {
-			"description": "Limits settings for your subscription.",
-			"type": "object",
-			"additionalProperties": false,
-			"required": [
-				"ProtectionGroupLimits",
-				"ProtectionLimits"
-			],
-			"properties": {
-				"ProtectionGroupLimits": {
-					"$ref": "#/definitions/ProtectionGroupLimits"
-				},
-				"ProtectionLimits": {
-					"$ref": "#/definitions/ProtectionLimits"
-				}
-			}
-		},
-		"ProtectionGroupLimits": {
-			"description": "Limits settings on protection groups for your subscription.",
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["MaxProtectionGroups", "PatternTypeLimits"],
-			"properties": {
-				"MaxProtectionGroups": {
-					"description": "The maximum number of protection groups that you can have at one time.",
-					"type": "integer"
-				},
-				"PatternTypeLimits": {
-					"$ref": "#/definitions/ProtectionGroupPatternTypeLimits"
-				}
-			}
-		}
-	}
+  "typeName": "AWS::Shield::Subscription",
+  "description": "AWS Shield Advanced Subscription.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
+  "primaryIdentifier": ["/properties/SubscriptionArn"],
+  "readOnlyProperties": [
+    "/properties/SubscriptionArn",
+    "/properties/StartTime",
+    "/properties/EndTime",
+    "/properties/TimeCommitmentInSeconds",
+    "/properties/Limits",
+    "/properties/ProactiveEngagementStatus",
+    "/properties/SubscriptionLimits"
+  ],
+  "required": ["AutoRenew"],
+  "tagging": {
+    "taggable": false
+  },
+  "additionalProperties": false,
+  "properties": {
+    "SubscriptionArn": {
+      "description": "The ARN (Amazon Resource Name) of the subscription.",
+      "type": "string"
+    },
+    "StartTime": {
+      "description": "The start time of the subscription, in Unix time in seconds.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "EndTime": {
+      "description": "The date and time your subscription will end.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "TimeCommitmentInSeconds": {
+      "description": "The length, in seconds, of the AWS Shield Advanced subscription for the account.",
+      "type": "integer"
+    },
+    "AutoRenew": {
+      "type": "string",
+      "enum": ["ENABLED", "DISABLED"],
+      "description": "If ENABLED, the subscription will be automatically renewed at the end of the existing subscription period."
+    },
+    "Limits": {
+      "description": "Specifies how many protections of a given type you can create.",
+      "type": "array",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Limit"
+      }
+    },
+    "ProactiveEngagementStatus": {
+      "description": "If `ENABLED`, the Shield Response Team (SRT) will use email and phone to notify contacts about escalations to the SRT and to initiate proactive customer support.\nIf `PENDING`, you have requested proactive engagement and the request is pending. The status changes to ENABLED when your request is fully processed.\nIf `DISABLED`, the SRT will not proactively notify contacts about escalations or to initiate proactive customer support.",
+      "type": "string",
+      "enum": ["ENABLED", "DISABLED", "PENDING"]
+    },
+    "SubscriptionLimits": {
+      "$ref": "#/definitions/SubscriptionLimits"
+    }
+  },
+  "definitions": {
+    "Limit": {
+      "description": "Specifies how many protections of a given type you can create.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Max": {
+          "description": "The maximum number of protections that can be created for the specified Type.",
+          "type": "integer"
+        },
+        "Type": {
+          "description": "The type of protection",
+          "type": "string"
+        }
+      }
+    },
+    "ProtectionLimits": {
+      "description": "Limits settings on protections for your subscription.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ProtectedResourceTypeLimits"],
+      "properties": {
+        "ProtectedResourceTypeLimits": {
+          "description": "The maximum number of resource types that you can specify in a protection.",
+          "type": "array",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Limit"
+          }
+        }
+      }
+    },
+    "ProtectionGroupPatternTypeLimits": {
+      "description": "Limits settings by pattern type in the protection groups for your subscription.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ArbitraryPatternLimits"],
+      "properties": {
+        "ArbitraryPatternLimits": {
+          "$ref": "#/definitions/ProtectionGroupArbitraryPatternLimits"
+        }
+      }
+    },
+    "ProtectionGroupArbitraryPatternLimits": {
+      "description": "Limits settings on protection groups with arbitrary pattern type.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["MaxMembers"],
+      "properties": {
+        "MaxMembers": {
+          "description": "The maximum number of resources you can specify for a single arbitrary pattern in a protection group",
+          "type": "integer"
+        }
+      }
+    },
+    "SubscriptionLimits": {
+      "description": "Limits settings for your subscription.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ProtectionGroupLimits", "ProtectionLimits"],
+      "properties": {
+        "ProtectionGroupLimits": {
+          "$ref": "#/definitions/ProtectionGroupLimits"
+        },
+        "ProtectionLimits": {
+          "$ref": "#/definitions/ProtectionLimits"
+        }
+      }
+    },
+    "ProtectionGroupLimits": {
+      "description": "Limits settings on protection groups for your subscription.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["MaxProtectionGroups", "PatternTypeLimits"],
+      "properties": {
+        "MaxProtectionGroups": {
+          "description": "The maximum number of protection groups that you can have at one time.",
+          "type": "integer"
+        },
+        "PatternTypeLimits": {
+          "$ref": "#/definitions/ProtectionGroupPatternTypeLimits"
+        }
+      }
+    }
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "shield:CreateSubscription"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "shield:DescribeSubscription"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "shield:UpdateSubscription"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "shield:DescribeSubscription"
+      ]
+    }
+  }
 }

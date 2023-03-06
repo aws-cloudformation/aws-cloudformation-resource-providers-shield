@@ -2,8 +2,11 @@
   "typeName": "AWS::Shield::DRTAccess",
   "description": "Config the role and list of Amazon S3 log buckets used by the Shield Response Team (SRT) to access your AWS account while assisting with attack mitigation.",
   "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
-  "primaryIdentifier": [ "/properties/AccountId" ],
-  "readOnlyProperties": [ "/properties/AccountId" ],
+  "primaryIdentifier": ["/properties/AccountId"],
+  "readOnlyProperties": ["/properties/AccountId"],
+  "tagging": {
+    "taggable": false
+  },
   "additionalProperties": false,
   "properties": {
     "AccountId": {
@@ -24,7 +27,37 @@
       "type": "string"
     }
   },
-  "tagging" : {
-    "taggable": false
+  "handlers": {
+    "create": {
+      "permissions": [
+        "shield:DescribeDRTAccess",
+        "shield:AssociateDRTLogBucket",
+        "shield:AssociateDRTRole"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "shield:DescribeDRTAccess",
+        "shield:DisassociateDRTLogBucket",
+        "shield:DisassociateDRTRole"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "shield:DescribeDRTAccess"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "shield:DescribeDRTAccess",
+        "shield:AssociateDRTLogBucket",
+        "shield:AssociateDRTRole",
+        "shield:DisassociateDRTLogBucket",
+        "shield:DisassociateDRTRole"
+      ]
+    },
+    "list": {
+      "permissions": []
+    }
   }
 }

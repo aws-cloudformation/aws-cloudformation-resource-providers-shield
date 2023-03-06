@@ -10,6 +10,8 @@ import software.amazon.awssdk.services.shield.model.ApplicationLayerAutomaticRes
 import software.amazon.awssdk.services.shield.model.BlockAction;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
+import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
+import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseResponse;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
 import software.amazon.awssdk.services.shield.model.Protection;
@@ -28,7 +30,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-public class ReadHandlerTest {
+public class UpdateHandlerTest {
 
     @Mock
     private AmazonWebServicesClientProxy proxy;
@@ -36,7 +38,7 @@ public class ReadHandlerTest {
     @Mock
     private Logger logger;
 
-    private ReadHandler readHandler;
+    private UpdateHandler updateHandler;
     private ResourceModel resourceModel;
 
     @BeforeEach
@@ -44,7 +46,7 @@ public class ReadHandlerTest {
         this.proxy = mock(AmazonWebServicesClientProxy.class);
         this.logger = mock(Logger.class);
 
-        this.readHandler = new ReadHandler(mock(ShieldClient.class));
+        this.updateHandler = new UpdateHandler(mock(ShieldClient.class));
         this.resourceModel = ProtectionTestData.RESOURCE_MODEL_1;
     }
 
@@ -78,25 +80,30 @@ public class ReadHandlerTest {
                                         .build())
                         .build();
 
+        doReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build())
+                .when(this.proxy)
+                .injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any());
+
         registerListTags();
 
         doReturn(describeProtectionResponse)
-                .when(this.proxy).injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
+                .when(this.proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
 
-        final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.readHandler.handleRequest(this.proxy, request, null, this.logger);
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
 
     private void registerListTags() {
-
         ListTagsForResourceResponse tagResponse =
                 ListTagsForResourceResponse.builder()
                         .tags(
