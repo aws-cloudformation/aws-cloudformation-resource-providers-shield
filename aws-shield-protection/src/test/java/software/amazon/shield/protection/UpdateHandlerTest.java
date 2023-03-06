@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class UpdateHandlerTest {
@@ -81,8 +80,9 @@ public class UpdateHandlerTest {
                                         .build())
                         .build();
 
-        when(this.proxy.injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any()))
-                .thenReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build());
+        doReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build())
+                .when(this.proxy)
+                .injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any());
 
         registerListTags();
 

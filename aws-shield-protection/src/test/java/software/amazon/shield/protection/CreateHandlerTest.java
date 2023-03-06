@@ -32,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateHandlerTest {
@@ -99,10 +98,12 @@ public class CreateHandlerTest {
                 .when(this.proxy)
                 .injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
 
-        when(this.proxy.injectCredentialsAndInvokeV2(any(AssociateHealthCheckRequest.class), any()))
-                .thenReturn(AssociateHealthCheckResponse.builder().build());
-        when(this.proxy.injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any()))
-                .thenReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build());
+        doReturn(AssociateHealthCheckResponse.builder().build())
+                .when(this.proxy)
+                .injectCredentialsAndInvokeV2(any(AssociateHealthCheckRequest.class), any());
+        doReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build())
+                .when(this.proxy)
+                .injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
                 this.createHandler.handleRequest(this.proxy, request, null, this.logger);
