@@ -21,32 +21,40 @@
       "type": "string",
       "enum": ["ENABLED", "DISABLED"]
     },
-    "EmergencyContactList": {
+    "EmergencyContacts": {
       "description": "A list of email addresses and phone numbers that the Shield Response Team (SRT) can use to contact you for escalations to the SRT and to initiate proactive customer support.\nTo enable proactive engagement, the contact list must include at least one phone number.",
       "type": "array",
       "insertionOrder": false,
       "minItems": 0,
       "maxItems": 10,
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["EmailAddress"],
-        "properties": {
-          "ContactNotes": {
-            "description": "Additional notes regarding the contact.",
-            "pattern": "^[\\w\\s\\.\\-,:/()+@]*$",
-            "type": "string"
-          },
-          "EmailAddress": {
-            "description": "The email address for the contact.",
-            "pattern": "^\\S+@\\S+\\.\\S+$",
-            "type": "string"
-          },
-          "PhoneNumber": {
-            "description": "The phone number for the contact",
-            "pattern": "^\\+[1-9]\\d{1,14}$",
-            "type": "string"
-          }
+        "$ref": "#/definitions/EmergencyContact"
+      }
+    }
+  },
+  "definitions": {
+    "EmergencyContact": {
+      "description": "An emergency contact is used by Shield Response Team (SRT) to contact you for escalations to the SRT and to initiate proactive customer support. An emergency contact requires an email address.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "EmailAddress"
+      ],
+      "properties": {
+        "ContactNotes": {
+          "description": "Additional notes regarding the contact.",
+          "pattern": "^[\\w\\s\\.\\-,:/()+@]*$",
+          "type": "string"
+        },
+        "EmailAddress": {
+          "description": "The email address for the contact.",
+          "pattern": "^\\S+@\\S+\\.\\S+$",
+          "type": "string"
+        },
+        "PhoneNumber": {
+          "description": "The phone number for the contact",
+          "pattern": "^\\+[1-9]\\d{1,14}$",
+          "type": "string"
         }
       }
     }
@@ -54,7 +62,6 @@
   "handlers": {
     "create": {
       "permissions": [
-        "shield:DescribeSubscription",
         "shield:AssociateProactiveEngagementDetails"
       ]
     },
@@ -66,7 +73,8 @@
     },
     "read": {
       "permissions": [
-        "shield:DescribeSubscription"
+        "shield:DescribeSubscription",
+        "shield:DescribeEmergencyContactSettings"
       ]
     },
     "update": {
@@ -77,9 +85,7 @@
       ]
     },
     "list": {
-      "permissions": [
-        "shield:DescribeSubscription"
-      ]
+      "permissions": []
     }
   }
 }
