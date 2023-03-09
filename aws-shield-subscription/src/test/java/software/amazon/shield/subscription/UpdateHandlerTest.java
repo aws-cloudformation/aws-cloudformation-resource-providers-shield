@@ -1,17 +1,23 @@
 package software.amazon.shield.subscription;
 
-import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
-import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
-import software.amazon.cloudformation.proxy.ProgressEvent;
-import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.shield.ShieldClient;
+import software.amazon.awssdk.services.shield.model.UpdateSubscriptionRequest;
+import software.amazon.awssdk.services.shield.model.UpdateSubscriptionResponse;
+import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.subscription.helper.SubscriptionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,24 +29,34 @@ public class UpdateHandlerTest {
     @Mock
     private Logger logger;
 
+    private UpdateHandler updateHandler;
+    private ResourceModel resourceModel;
+
     @BeforeEach
     public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
-        logger = mock(Logger.class);
+        this.proxy = mock(AmazonWebServicesClientProxy.class);
+        this.logger = mock(Logger.class);
+
+        this.updateHandler = new UpdateHandler(mock(ShieldClient.class));
+        this.resourceModel = SubscriptionTestData.RESOURCE_MODEL;
     }
 
     @Test
     public void handleRequest_SimpleSuccess() {
-        final UpdateHandler handler = new UpdateHandler();
+        final ResourceHandlerRequest<ResourceModel> request =
+                ResourceHandlerRequest.<ResourceModel>builder()
+                        .desiredResourceState(this.resourceModel)
+                        .build();
 
-        final ResourceModel model = ResourceModel.builder().build();
+        final UpdateSubscriptionResponse updateSubscriptionResponse =
+                UpdateSubscriptionResponse.builder()
+                        .build();
 
-        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-            .desiredResourceState(model)
-            .build();
+        doReturn(updateSubscriptionResponse)
+                .when(this.proxy).injectCredentialsAndInvokeV2(any(UpdateSubscriptionRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = handler.handleRequest(proxy, request, null, logger);
+            = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
