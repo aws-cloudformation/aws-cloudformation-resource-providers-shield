@@ -1,24 +1,28 @@
 package software.amazon.shield.proactiveengagement;
 
-import java.util.Collections;
-
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
+import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
+import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 
-public class DeleteHandler extends BaseHandler<CallbackContext> {
-
-    private final ShieldClient client;
+public class DeleteHandler extends BaseHandlerStd {
 
     public DeleteHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        super();
+    }
+
+    public DeleteHandler(
+            ShieldClient shieldClient,
+            EventualConsistencyHandlerHelper<ResourceModel, CallbackContext> eventualConsistencyHandlerHelper) {
+        super(shieldClient, eventualConsistencyHandlerHelper);
+
     }
 
     @Override
@@ -26,29 +30,50 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             final AmazonWebServicesClientProxy proxy,
             final ResourceHandlerRequest<ResourceModel> request,
             final CallbackContext callbackContext,
+            final ProxyClient<ShieldClient> proxyClient,
             final Logger logger) {
 
-        final ResourceModel model = request.getDesiredResourceState();
+        final ResourceModel input = request.getDesiredResourceState();
+        final ResourceModel model = HandlerHelper.copyNewModel(input);
 
-        try {
-            HandlerHelper.disableProactiveEngagement(proxy, client);
-            final UpdateEmergencyContactSettingsRequest updateEmergencyContactSettingsRequest =
-                    UpdateEmergencyContactSettingsRequest.builder()
-                    .emergencyContactList(Collections.emptyList())
-                    .build();
-            proxy.injectCredentialsAndInvokeV2(updateEmergencyContactSettingsRequest,
-                    client::updateEmergencyContactSettings);
+        return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
+                .then(progress -> validateInput(progress, callbackContext, request))
+                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext))
+                .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        false))
+                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> ProgressEvent.defaultSuccessHandler(input));
+    }
 
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(model)
-                    .status(OperationStatus.SUCCESS)
-                    .build();
-        } catch (RuntimeException e) {
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+    @Override
+    protected ProgressEvent<ResourceModel, CallbackContext> validateInput(
+            ProgressEvent<ResourceModel, CallbackContext> progress,
+            CallbackContext callbackContext,
+            ResourceHandlerRequest<ResourceModel> request) {
+        if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
+            return ProgressEvent.failed(request.getDesiredResourceState(),
+                    callbackContext,
+                    HandlerErrorCode.NotFound,
+                    HandlerHelper.PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG);
         }
+        final ResourceModel model = request.getDesiredResourceState();
+        if (model.getProactiveEngagementStatus()
+                .equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString()) || !model.getEmergencyContactList()
+                .isEmpty()) {
+            return ProgressEvent.failed(request.getDesiredResourceState(),
+                    callbackContext,
+                    HandlerErrorCode.InvalidRequest,
+                    "Invalid delete request input");
+        }
+        return progress;
     }
 }
