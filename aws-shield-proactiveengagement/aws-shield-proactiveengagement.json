@@ -63,6 +63,7 @@
     "create": {
       "permissions": [
         "shield:DescribeSubscription",
+        "shield:DescribeEmergencyContactSettings",
         "shield:AssociateProactiveEngagementDetails"
       ]
     },
