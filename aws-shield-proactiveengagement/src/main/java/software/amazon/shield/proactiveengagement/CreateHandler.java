@@ -84,7 +84,7 @@ public class CreateHandler extends BaseHandlerStd {
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::describeSubscription))
                     .done(res -> {
-                        if (!HandlerHelper.isProactiveEngagementStatusMissing(res)) {
+                        if (HandlerHelper.doesProactiveEngagementStatusExist(res)) {
                             return ProgressEvent.failed(model,
                                     context,
                                     HandlerErrorCode.ResourceConflict,
@@ -106,7 +106,7 @@ public class CreateHandler extends BaseHandlerStd {
                     .translateToServiceRequest((m) -> AssociateProactiveEngagementDetailsRequest.builder()
                             .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(m.getEmergencyContactList()))
                             .build())
-                    .makeServiceCall((associateProactiveEngagementRequest, client) -> proxyClient.injectCredentialsAndInvokeV2(
+                    .makeServiceCall((associateProactiveEngagementRequest, client) -> proxy.injectCredentialsAndInvokeV2(
                             associateProactiveEngagementRequest,
                             shieldClient::associateProactiveEngagementDetails))
                     .stabilize((request, response, client, m, callbackContext) -> checkCreateStabilization(client))
@@ -134,6 +134,6 @@ public class CreateHandler extends BaseHandlerStd {
         } catch (RuntimeException e) {
             return false;
         }
-        return HandlerHelper.isProactiveEngaged(describeEmergencyContactSettingsResponse, describeSubscriptionResponse);
+        return HandlerHelper.isProactiveEngagementEnabled(describeEmergencyContactSettingsResponse, describeSubscriptionResponse);
     }
 }

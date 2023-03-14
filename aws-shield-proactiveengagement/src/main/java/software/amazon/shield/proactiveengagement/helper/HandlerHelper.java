@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse
 import software.amazon.awssdk.services.shield.model.DisableProactiveEngagementRequest;
 import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementRequest;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
+import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
@@ -38,17 +39,16 @@ public class HandlerHelper {
                 .equals(request.getAwsAccountId());
     }
 
-    public static boolean isProactiveEngagementStatusMissing(DescribeSubscriptionResponse describeSubscriptionResponse) {
-        return describeSubscriptionResponse.subscription() == null || describeSubscriptionResponse.subscription()
-                .proactiveEngagementStatus() == null;
+    public static boolean doesProactiveEngagementStatusExist(DescribeSubscriptionResponse describeSubscriptionResponse) {
+        Subscription subscription = describeSubscriptionResponse.subscription();
+        return subscription != null && subscription.proactiveEngagementStatus() != null;
     }
 
-    public static boolean isProactiveEngaged(
+    public static boolean isProactiveEngagementEnabled(
             DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse,
             DescribeSubscriptionResponse describeSubscriptionResponse) {
-        return describeSubscriptionResponse.subscription()
-                .proactiveEngagementStatus() != null && describeSubscriptionResponse.subscription()
-                .proactiveEngagementStatus()
+        Subscription subscription = describeSubscriptionResponse.subscription();
+        return subscription.proactiveEngagementStatus() != null && subscription.proactiveEngagementStatus()
                 .equals(ProactiveEngagementStatus.ENABLED) && describeEmergencyContactSettingsResponse.hasEmergencyContactList();
     }
 
@@ -92,14 +92,7 @@ public class HandlerHelper {
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
             return proxy.initiate("shield::describe-subscription", proxyClient, model, context)
-                    .translateToServiceRequest(m -> {
-                                DescribeSubscriptionRequest describeSubscriptionRequest =
-                                        DescribeSubscriptionRequest.builder()
-                                                .build();
-                                System.out.println(describeSubscriptionRequest);
-                                return describeSubscriptionRequest;
-                            }
-                    )
+                    .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
                     .makeServiceCall((request, client) -> proxy.injectCredentialsAndInvokeV2(request,
                             shieldClient::describeSubscription))
                     .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
@@ -107,7 +100,7 @@ public class HandlerHelper {
                             ExceptionConverter.convertToErrorCode((RuntimeException) e),
                             e.getMessage()))
                     .done(res -> {
-                        if (HandlerHelper.isProactiveEngagementStatusMissing(res)) {
+                        if (!HandlerHelper.doesProactiveEngagementStatusExist(res)) {
                             return ProgressEvent.failed(model,
                                     context,
                                     HandlerErrorCode.NotFound,
