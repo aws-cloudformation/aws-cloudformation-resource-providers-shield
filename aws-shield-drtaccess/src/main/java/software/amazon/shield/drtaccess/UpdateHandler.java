@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
@@ -18,6 +19,7 @@ import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.drtaccess.helper.HandlerHelper;
 
+@RequiredArgsConstructor
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     private final ShieldClient client;

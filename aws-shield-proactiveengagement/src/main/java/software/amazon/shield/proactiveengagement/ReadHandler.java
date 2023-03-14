@@ -8,6 +8,7 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
+import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.ReadHandlerHelper;
 
@@ -15,6 +16,12 @@ public class ReadHandler extends BaseHandlerStd {
 
     public ReadHandler() {
         super();
+    }
+
+    public ReadHandler(
+            ShieldClient shieldClient,
+            EventualConsistencyHandlerHelper<ResourceModel, CallbackContext> eventualConsistencyHandlerHelper) {
+        super(shieldClient, eventualConsistencyHandlerHelper);
     }
 
     protected ProgressEvent<ResourceModel, CallbackContext> handleRequest(
