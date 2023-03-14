@@ -7,10 +7,10 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
-def resource_name_with_dashes = 'aws-shield-protection'
+def resource_name_with_dashes = 'aws-shield-subscription'
 def schema_file = "${resource_name_with_dashes}.json"
 
-description 'CloudFormation Resource Provider - <AWS::Shield::Protection>'
+description 'CloudFormation Resource Provider - <AWS::Shield::Subscription>'
 
 // Include RPDK generated source by `cfn generate`
 sourceSets.main.java.srcDir 'target/generated-sources/rpdk'
@@ -106,10 +106,6 @@ task rpdkPackage(type: Zip) {
 //        include "canary-bundle/**/*"
 //    }
     from zipTree(cfnPackage.outputs.files.singleFile)
-}
-
-task wrapper(type: Wrapper){
-    gradleVersion = '8.0.1'
 }
 
 // Publish the resource provider artifact as project output

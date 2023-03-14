@@ -180,7 +180,6 @@ public class UpdateHandlerTest {
 
     @Test
     public void handleRequest_AccountNotFoundFailure() {
-        final ListHandler handler = new ListHandler();
 
         final ResourceModel model = ResourceModel.builder()
                 .accountId(DrtAccessTestHelper.accountId)
@@ -191,7 +190,7 @@ public class UpdateHandlerTest {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                handler.handleRequest(proxy, request, null, logger);
+                updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);

@@ -102,7 +102,9 @@ task rpdkPackage(type: Zip) {
 
     destinationDirectory = file('build/rpdk')
     archiveFileName = "${resource_name_with_dashes}.zip"
-
+//    from ("${rootDir}/${resource_name_with_dashes}") {
+//        include "canary-bundle/**/*"
+//    }
     from zipTree(cfnPackage.outputs.files.singleFile)
 }
 

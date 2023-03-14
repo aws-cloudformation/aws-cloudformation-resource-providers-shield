@@ -15,8 +15,7 @@ allprojects {
     version "1.0-SNAPSHOT"
 }
 
-// TODO: add aws-shield-subscription
-def projectsToRelease = ["aws-shield-protection", "aws-shield-protectiongroup"]
+def projectsToRelease = ["aws-shield-protection", "aws-shield-protectiongroup", "aws-shield-drtaccess", "aws-shield-proactiveengagement", "aws-shield-subscription"]
 
 // Sharing artifacts between projects should be done this way
 // See: https://docs.gradle.org/6.8.3/userguide/cross_project_publications.html#sec:simple-sharing-artifacts-between-projects

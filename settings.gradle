@@ -1,6 +1,8 @@
 rootProject.name = 'AWSCloudFormationResourceProvidersShield'
 
-// TODO: add aws-shield-subscription
 include 'aws-shield-protection'
 include 'aws-shield-protectiongroup'
+include 'aws-shield-drtaccess'
+include 'aws-shield-proactiveengagement'
+include 'aws-shield-subscription'
 include 'aws-shield-common'
