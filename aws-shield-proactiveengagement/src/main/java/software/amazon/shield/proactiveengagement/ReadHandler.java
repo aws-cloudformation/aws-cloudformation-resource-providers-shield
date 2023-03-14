@@ -9,6 +9,7 @@ import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
+import software.amazon.shield.proactiveengagement.helper.ReadHandlerHelper;
 
 public class ReadHandler extends BaseHandlerStd {
 
@@ -28,11 +29,10 @@ public class ReadHandler extends BaseHandlerStd {
         return ProgressEvent.progress(model, callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
                 .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext))
-                .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
+                .then(progress -> ReadHandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext,
-                        true))
+                        callbackContext))
                 .then(progress -> ProgressEvent.defaultSuccessHandler(model));
     }
 

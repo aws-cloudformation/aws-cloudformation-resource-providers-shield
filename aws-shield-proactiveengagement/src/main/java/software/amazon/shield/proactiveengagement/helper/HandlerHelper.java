@@ -56,8 +56,7 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context,
-            final boolean isReadHandler
+            final CallbackContext context
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
             return proxy.initiate("shield::describe-emergency-contact", proxyClient, model, context)
@@ -75,9 +74,6 @@ public class HandlerHelper {
                                     context,
                                     HandlerErrorCode.NotFound,
                                     HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
-                        }
-                        if (isReadHandler) {
-                            model.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(r.emergencyContactList()));
                         }
                         return ProgressEvent.progress(model, context);
                     });
