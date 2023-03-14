@@ -1,9 +1,14 @@
 package software.amazon.shield.drtaccess;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessRequest;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -11,8 +16,6 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.drtaccess.helper.HandlerHelper;
-
-import java.util.List;
 
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
@@ -31,19 +34,36 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
         final ResourceModel model = request.getDesiredResourceState();
 
+        if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
+            return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                    .status(OperationStatus.FAILED)
+                    .errorCode(HandlerErrorCode.NotFound)
+                    .message(HandlerHelper.DRTACCESS_ACCOUNT_ID_NOT_FOUND_ERROR_MSG)
+                    .build();
+        }
+
         try {
-            final DescribeDrtAccessRequest describeDrtAccessRequest = DescribeDrtAccessRequest.builder().build();
-            final DescribeDrtAccessResponse describeDrtAccessResponse = proxy.injectCredentialsAndInvokeV2(
-                    describeDrtAccessRequest, client::describeDRTAccess);
+            final DescribeDrtAccessResponse describeDrtAccessResponse =
+                    HandlerHelper.getDrtAccessDescribeResponse(proxy,
+                            client);
+            if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+                return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                        .status(OperationStatus.FAILED)
+                        .errorCode(HandlerErrorCode.NotFound)
+                        .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
+                        .build();
+            }
 
-            List<String> oldLogBucketList = describeDrtAccessResponse.logBucketList();
+            final List<String> oldLogBucketList = describeDrtAccessResponse.logBucketList();
+            final List<String> newLogBucketList = new ArrayList<>(Optional.ofNullable(model.getLogBucketList())
+                    .orElse(Collections.emptyList()));
 
-            // remove old roleArn and logBucketList
-            disassociateDrtLogBucketList(model, proxy, client, oldLogBucketList);
-            disassociateDrtRole(model, proxy, client);
-            // add new roleArn and logBucketList
-            associateDrtRole(model, proxy, client, model.getRoleArn());
-            associateDrtLogBucketList(model, proxy, client, model.getLogBucketList());
+            // update logBucketList
+            updateLogBucketList(proxy, oldLogBucketList, newLogBucketList);
+            // add new roleArn
+            if (needToUpdateDrtRole(model.getRoleArn())) {
+                HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn());
+            }
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .resourceModel(model)
                     .status(OperationStatus.SUCCESS)
@@ -57,23 +77,21 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         }
     }
 
-    private void disassociateDrtRole(ResourceModel input, AmazonWebServicesClientProxy proxy, ShieldClient client) {
-        if (input.getRoleArn() == null || input.getRoleArn().isEmpty()) return;
-        HandlerHelper.disassociateDrtRole(proxy, client);
+    private void updateLogBucketList(
+            final AmazonWebServicesClientProxy proxy,
+            List<String> oldList,
+            List<String> newList) {
+        List<String> removeList = new ArrayList<>(oldList);
+        removeList.removeAll(newList);
+        newList.removeAll(oldList);
+
+        // remove deleted list
+        HandlerHelper.disassociateDrtLogBucketList(proxy, client, removeList);
+        // add new list
+        HandlerHelper.associateDrtLogBucketList(proxy, client, newList);
     }
 
-    private void disassociateDrtLogBucketList(ResourceModel input, AmazonWebServicesClientProxy proxy, ShieldClient client, List<String> logBucketList) {
-        if (input.getLogBucketList() == null || input.getLogBucketList().isEmpty()) return;
-        HandlerHelper.disassociateDrtLogBucketList(proxy, client, logBucketList);
-    }
-
-    private void associateDrtRole(ResourceModel input, AmazonWebServicesClientProxy proxy, ShieldClient client, String roleArn) {
-        if (input.getRoleArn() == null || input.getRoleArn().isEmpty()) return;
-        HandlerHelper.associateDrtRole(proxy, client, roleArn);
-    }
-
-    private void associateDrtLogBucketList(ResourceModel input, AmazonWebServicesClientProxy proxy, ShieldClient client, List<String> logBucketList) {
-        if (input.getLogBucketList() == null || input.getLogBucketList().isEmpty()) return;
-        HandlerHelper.associateDrtLogBucketList(proxy, client, logBucketList);
+    private boolean needToUpdateDrtRole(String roleArn) {
+        return roleArn != null && !roleArn.isEmpty();
     }
 }
