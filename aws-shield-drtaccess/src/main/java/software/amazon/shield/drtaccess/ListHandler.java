@@ -6,7 +6,6 @@ import java.util.List;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
-import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -29,26 +28,18 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             final CallbackContext callbackContext,
             final Logger logger) {
 
-        if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(HandlerErrorCode.NotFound)
-                    .message(HandlerHelper.DRTACCESS_ACCOUNT_ID_NOT_FOUND_ERROR_MSG)
-                    .build();
-        }
-
         try {
+            final List<ResourceModel> models = new ArrayList<>();
+
             final DescribeDrtAccessResponse describeDrtAccessResponse =
                     HandlerHelper.getDrtAccessDescribeResponse(proxy,
-                    client);
+                            client);
             if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                        .status(OperationStatus.FAILED)
-                        .errorCode(HandlerErrorCode.NotFound)
-                        .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
+                        .resourceModels(models)
+                        .status(OperationStatus.SUCCESS)
                         .build();
             }
-            final List<ResourceModel> models = new ArrayList<>();
 
             models.add(ResourceModel.builder().accountId(request.getDesiredResourceState().getAccountId()).build());
 

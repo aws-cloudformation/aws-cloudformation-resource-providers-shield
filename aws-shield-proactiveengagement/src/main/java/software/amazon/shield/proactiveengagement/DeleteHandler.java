@@ -42,8 +42,7 @@ public class DeleteHandler extends BaseHandlerStd {
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext,
-                        false))
+                        callbackContext))
                 .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
