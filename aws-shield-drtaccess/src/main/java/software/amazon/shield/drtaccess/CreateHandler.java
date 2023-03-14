@@ -1,7 +1,6 @@
 package software.amazon.shield.drtaccess;
 
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessRequest;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
@@ -31,7 +30,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            if (!canCreateDrtAccess(proxy)) {
+            DescribeDrtAccessResponse describeDrtAccessResponse = HandlerHelper.getDrtAccessDescribeResponse(proxy, client);
+            if (!HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.ResourceConflict)
@@ -51,12 +51,5 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     .message(e.getMessage())
                     .build();
         }
-    }
-
-    private boolean canCreateDrtAccess(AmazonWebServicesClientProxy proxy) {
-        final DescribeDrtAccessRequest describeDrtAccessRequest = DescribeDrtAccessRequest.builder().build();
-        final DescribeDrtAccessResponse describeDrtAccessResponse = proxy.injectCredentialsAndInvokeV2(
-                describeDrtAccessRequest, client::describeDRTAccess);
-        return describeDrtAccessResponse.roleArn() == null || describeDrtAccessResponse.roleArn().isEmpty();
     }
 }
