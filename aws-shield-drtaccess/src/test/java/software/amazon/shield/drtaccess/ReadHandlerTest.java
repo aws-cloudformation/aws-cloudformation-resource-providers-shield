@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessRequest;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -47,12 +48,14 @@ public class ReadHandlerTest {
                 .logBucketList(resourceModel.getLogBucketList())
                 .build();
 
+        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
+
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(DrtAccessTestHelper.accountId)
                 .desiredResourceState(ResourceModel.builder().accountId(DrtAccessTestHelper.accountId).build())
                 .nextToken("randomNextToken")
                 .build();
 
-        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
         final ProgressEvent<ResourceModel, CallbackContext> response =
                 readHandler.handleRequest(proxy, request, null, logger);
 
@@ -61,5 +64,44 @@ public class ReadHandlerTest {
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getResourceModel().getRoleArn()).isEqualTo(DrtAccessTestHelper.roleArn);
         assertThat(response.getResourceModel().getLogBucketList()).isEqualTo(DrtAccessTestHelper.logBucketList);
+    }
+
+    @Test
+    public void handleRequest_NoDrtAccessFailure() {
+        final DescribeDrtAccessResponse describeDrtAccessResponse = DescribeDrtAccessResponse.builder()
+                .build();
+
+        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(DrtAccessTestHelper.accountId)
+                .desiredResourceState(ResourceModel.builder().accountId(DrtAccessTestHelper.accountId).build())
+                .nextToken("randomNextToken")
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response =
+                readHandler.handleRequest(proxy, request, null, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
+    }
+
+    @Test
+    public void handleRequest_AccountNotFoundFailure() {
+        final ResourceModel model = ResourceModel.builder()
+                .accountId(DrtAccessTestHelper.accountId)
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response =
+                readHandler.handleRequest(proxy, request, null, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
     }
 }

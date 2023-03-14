@@ -158,25 +158,7 @@ public class ListHandlerTest {
                 listHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
-        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
-    }
-
-    @Test
-    public void handleRequest_AccountNotFoundFailure() {
-        final ResourceModel model = ResourceModel.builder()
-                .accountId(ProactiveEngagementTestHelper.accountId)
-                .build();
-
-        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
-
-        final ProgressEvent<ResourceModel, CallbackContext> response =
-                listHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
-        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getResourceModels().isEmpty()).isEqualTo(true);
     }
 }

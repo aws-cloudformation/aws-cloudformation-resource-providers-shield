@@ -41,8 +41,7 @@ public class UpdateHandler extends BaseHandlerStd {
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext,
-                        false))
+                        callbackContext))
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
