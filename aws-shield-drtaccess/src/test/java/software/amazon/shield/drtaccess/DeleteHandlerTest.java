@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessRequest;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
@@ -37,7 +38,7 @@ public class DeleteHandlerTest {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
         resourceModel = DrtAccessTestHelper.getTestResourceModel();
-        deleteHandler = new DeleteHandler();
+        deleteHandler = new DeleteHandler(mock(ShieldClient.class));
     }
 
     @Test

@@ -63,10 +63,9 @@ public class ReadHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        readHandler = new ReadHandler();
+        readHandler = new ReadHandler(shieldClient, eventualConsistencyHandlerHelper);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
-        eventualConsistencyHandlerHelper = new EventualConsistencyHandlerHelper<>();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
         init = new AmazonWebServicesClientProxy(new LoggerProxy(),
                 MOCK_CREDENTIALS,

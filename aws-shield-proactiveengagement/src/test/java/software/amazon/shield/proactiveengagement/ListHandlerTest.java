@@ -23,6 +23,7 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +44,10 @@ public class ListHandlerTest {
     @Mock
     private ShieldClient shieldClient;
 
+    @Mock
+    private EventualConsistencyHandlerHelper<ResourceModel, CallbackContext>
+            eventualConsistencyHandlerHelper;
+
     private ListHandler listHandler;
 
     private ProxyClient<ShieldClient> proxyClient;
@@ -57,7 +62,7 @@ public class ListHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        listHandler = new ListHandler();
+        listHandler = new ListHandler(shieldClient, eventualConsistencyHandlerHelper);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
