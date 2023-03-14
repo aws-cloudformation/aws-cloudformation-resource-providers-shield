@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.google.common.collect.ImmutableList;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
@@ -54,14 +55,14 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                         .build();
             }
 
-            final List<String> oldLogBucketList = describeDrtAccessResponse.logBucketList();
-            final List<String> newLogBucketList = new ArrayList<>(Optional.ofNullable(model.getLogBucketList())
+            ImmutableList<String> oldLogBucketList = ImmutableList.copyOf(describeDrtAccessResponse.logBucketList());
+            ImmutableList<String> newLogBucketList = ImmutableList.copyOf(Optional.ofNullable(model.getLogBucketList())
                     .orElse(Collections.emptyList()));
 
             // update logBucketList
             updateLogBucketList(proxy, oldLogBucketList, newLogBucketList);
             // add new roleArn
-            if (needToUpdateDrtRole(model.getRoleArn())) {
+            if (needToUpdateDrtRole(model.getRoleArn(), describeDrtAccessResponse)) {
                 HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn());
             }
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
@@ -79,19 +80,20 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     private void updateLogBucketList(
             final AmazonWebServicesClientProxy proxy,
-            List<String> oldList,
-            List<String> newList) {
+            ImmutableList<String> oldList,
+            ImmutableList<String> newList) {
         List<String> removeList = new ArrayList<>(oldList);
+        List<String> addList = new ArrayList<>(newList);
         removeList.removeAll(newList);
-        newList.removeAll(oldList);
+        addList.removeAll(oldList);
 
         // remove deleted list
         HandlerHelper.disassociateDrtLogBucketList(proxy, client, removeList);
         // add new list
-        HandlerHelper.associateDrtLogBucketList(proxy, client, newList);
+        HandlerHelper.associateDrtLogBucketList(proxy, client, addList);
     }
 
-    private boolean needToUpdateDrtRole(String roleArn) {
-        return roleArn != null && !roleArn.isEmpty();
+    private boolean needToUpdateDrtRole(String roleArn, DescribeDrtAccessResponse describeDrtAccessResponse) {
+        return roleArn != null && !roleArn.isEmpty() && !roleArn.equalsIgnoreCase(describeDrtAccessResponse.roleArn());
     }
 }
