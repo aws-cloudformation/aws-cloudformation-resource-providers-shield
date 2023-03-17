@@ -1,0 +1,36 @@
+---
+Resources:
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        IPV6Enabled: false
+        Enabled: false
+        Origins:
+          - DomainName: example.com
+            Id: fakeOrigin
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: fakeOrigin
+          SmoothStreaming: false
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: all
+          ViewerProtocolPolicy: allow-all
+
+  EIP:
+    Type: AWS::EC2::EIP
+
+Outputs:
+  CloudFrontArn:
+    Value: !GetAtt CloudFront.Arn
+    Export:
+      Name: CanaryTestCloudFrontARN
+
+  EIPArn:
+    Value: !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:eip-allocation/${EIP.AllocationId}
+    Export:
+      Name: CanaryTestEIPArn

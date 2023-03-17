@@ -1,0 +1,17 @@
+---
+Description: CFN Canary CRUD WebACLs
+Resources:
+  DrtAccessToCreateThenUpdate:
+    Type: AWS::Shield::DRTAccess
+    Properties:
+      AccountId: !Ref AWS::AccountId
+      RoleArn: !ImportValue CanaryTestRoleOneArn
+      ProactiveEngagementStatus: ENABLED
+      LogBucketList:
+        - !ImportValue BucketOneName
+        - !ImportValue BucketTwoName
+
+  DrtAccessToCreateThenRemove:
+    Type: AWS::Shield::DRTAccess
+    Properties:
+      AccountId: !Ref AWS::AccountId

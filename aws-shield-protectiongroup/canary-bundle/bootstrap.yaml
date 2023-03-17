@@ -1,0 +1,48 @@
+---
+Parameters:
+  CFProtectionID:
+    Type: String
+    AllowedPattern: "^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"
+  CFProtectionName:
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9\\-]{1,128}$"
+
+Resources:
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        IPV6Enabled: false
+        Enabled: false
+        Origins:
+          - DomainName: example.com
+            Id: fakeOrigin
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: fakeOrigin
+          SmoothStreaming: false
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: all
+          ViewerProtocolPolicy: allow-all
+
+  CloudFrontProtection:
+    Type: AWS::Shield::Protection
+    Properties:
+      ProtectionId: !Ref CFProtectionID
+      ProtectionArn: !Sub arn:aws:shield::${AWS::AccountId}:protection/${CFProtectionId}
+      ResourceArn: !GetAtt CloudFront.Arn
+      Name: !Ref CFProtectionName
+      ApplicationLayerAutomaticResponseConfiguration:
+        Action:
+          Block: {}
+        Status: ENABLED
+
+Outputs:
+  CloudFrontArn:
+    Value: !GetAtt CloudFront.Arn
+    Export:
+      Name: CanaryTestCloudFrontARN

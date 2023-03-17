@@ -1,0 +1,15 @@
+---
+Description: CFN Canary CRUD Protection
+Parameters:
+  ProtectionId:
+    Type: String
+    AllowedPattern: "^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"
+
+Resources:
+  ProtectionToCreateThenUpdate:
+    Type: AWS::Shield::Protection
+    Properties:
+      ProtectionId: !Ref ProtectionId
+      ProtectionArn: !Sub arn:aws:shield::${AWS::AccountId}:protection/${ProtectionId}
+      ResourceArn: !ImportValue CanaryTestEIPArn
+      Name: CanaryProtectionTwo

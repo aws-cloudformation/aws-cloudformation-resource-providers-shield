@@ -1,0 +1,103 @@
+---
+Resources:
+  AdministrationRoleOne:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWSCloudFormationCanaryTestRoleOne
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole
+
+  AdministrationRoleTwo:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWSCloudFormationCanaryTestRoleTwo
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole
+
+  BucketOne:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cfn-canary-1-${AWS::Region}-${Stage}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  BucketTwo:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cfn-canary-2-${AWS::Region}-${Stage}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  BucketThree:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cfn-canary-3-${AWS::Region}-${Stage}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+Outputs:
+  RoleOneName:
+    Value: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/${AdministrationRoleOne.RoleName}
+    Export: CanaryTestRoleOneArn
+
+  RoleTwoName:
+    Value: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/${AdministrationRoleTwo.RoleName}
+    Export: CanaryTestRoleTwoArn
+
+  BucketOneName:
+    Value: !GetAtt BucketOne.Name
+    Export: CanaryBucketOneName
+
+  BucketTwoName:
+    Value: !GetAtt BucketTwo.Name
+    Export: CanaryBucketTwoName
+
+  BucketThreeName:
+    Value: !GetAtt BucketThree.Name
+    Export: CanaryBucketThreeName

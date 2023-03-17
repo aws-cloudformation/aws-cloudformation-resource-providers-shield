@@ -1,0 +1,27 @@
+---
+Description: CFN Canary CRUD Protection
+Parameters:
+  ProtectionId:
+    Type: String
+    AllowedPattern: "^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"
+  ProtectionName:
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9\\-]{1,128}$"
+
+Resources:
+  ProtectionToCreateThenUpdate:
+    Type: AWS::Shield::Protection
+    Properties:
+      ProtectionId: !Ref ProtectionId
+      ProtectionArn: !Sub arn:aws:shield::${AWS::AccountId}:protection/${ProtectionId}
+      ResourceArn: !ImportValue CanaryTestCloudFrontARN
+      Name: !Ref ProtectionName
+      ApplicationLayerAutomaticResponseConfiguration:
+        Action:
+          Block: {}
+        Status: ENABLED
+
+  ProtectionToCreateThenRemove:
+    Type: AWS::Shield::Protection
+    Properties:
+      ProtectionArn: !Sub arn:aws:shield::${AWS::AccountId}:protection/${ProtectionId}

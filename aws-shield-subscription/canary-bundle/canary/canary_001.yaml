@@ -1,0 +1,7 @@
+---
+Description: CFN Canary CRUD Subscription
+Resources:
+  SubscriptionToCreateThenUpdate:
+    Type: AWS::Shield::Subscription
+    Properties:
+      AutoRenew: ENABLED

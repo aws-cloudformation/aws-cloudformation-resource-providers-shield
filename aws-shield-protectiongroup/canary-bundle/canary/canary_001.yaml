@@ -1,0 +1,21 @@
+---
+Description: CFN Canary CRUD ProtectionGroup
+Parameters:
+  ProtectionGroupId:
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9\\-]{1,36}$"
+
+Resources:
+  ProtectionGroupToCreateThenUpdate:
+    Type: AWS::Shield::ProtectionGroup
+    Properties:
+      ProtectionGroupId: CanaryProtectionGroupOne
+      ProtectionGroupArn: !Sub arn:aws:shield::${AWS::AccountId}:protection-group/${ProtectionGroupId}
+      Aggregation: SUM
+      Pattern: ALL
+      ResourceType: CLOUDFRONT_DISTRIBUTION
+
+  ProtectionGroupToCreateThenRemove:
+    Type: AWS::Shield::ProtectionGroup
+    Properties:
+      ProtectionGroupArn: !Sub arn:aws:shield::${AWS::AccountId}:protection-group/${ProtectionGroupId}

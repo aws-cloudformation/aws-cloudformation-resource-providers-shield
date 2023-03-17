@@ -1,0 +1,42 @@
+---
+Description: CFN Canary CRUD WebACLs
+Parameters:
+  EmailAddress1:
+    Type: String
+    AllowedPattern: "^[\S+@\S+\.\S+]{1,150}$"
+  ContactNotes1:
+    Type: String
+    AllowedPattern: "^[\w\s\.\-,:/()+@]{1,1024}$"
+  PhoneNumber1:
+    Type: String
+    AllowedPattern: "^\+[0-9-]{1,16}$"
+  EmailAddress2:
+    Type: String
+    AllowedPattern: "^[\S+@\S+\.\S+]{1,150}$"
+  ContactNotes2:
+    Type: String
+    AllowedPattern: "^[\w\s\.\-,:/()+@]{1,1024}$"
+  PhoneNumber2:
+    Type: String
+    AllowedPattern: "^\+[0-9-]{1,16}$"
+
+Resources:
+  ProactiveEngagementToCreateThenUpdate:
+    Type: AWS::Shield::ProactiveEngagement
+    Properties:
+      AccountId: !Ref AWS::AccountId
+      ProactiveEngagementStatus: ENABLED
+      EmergencyContactList:
+        - EmailAddress: !Ref EmailAddress1
+          ContactNotes: !Ref ContactNote1
+          PhoneNumber: !Ref PhoneNumber1
+        - EmailAddress: !Ref EmailAddress2
+          ContactNotes: !Ref ContactNote2
+          PhoneNumber: !Ref PhoneNumber2
+
+  WebACLToCreateThenRemove:
+    Type: AWS::Shield::ProactiveEngagement
+    Properties:
+      AccountId: !Ref AWS::AccountId
+      ProactiveEngagementStatus: DISABLED
+      EmergencyContactList: []

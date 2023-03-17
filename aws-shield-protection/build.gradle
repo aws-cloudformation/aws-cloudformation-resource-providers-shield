@@ -1,4 +1,3 @@
-
 plugins {
     id 'brazil-gradle'
     id 'brazil-quality-defaults'
@@ -102,13 +101,14 @@ task rpdkPackage(type: Zip) {
 
     destinationDirectory = file('build/rpdk')
     archiveFileName = "${resource_name_with_dashes}.zip"
-    from ("${rootDir}/${resource_name_with_dashes}") {
-       include "settings.internal.json"
+    from("${rootDir}/${resource_name_with_dashes}") {
+        include "settings.internal.json"
+        include "canary-bundle/**/*"
     }
     from zipTree(cfnPackage.outputs.files.singleFile)
 }
 
-task wrapper(type: Wrapper){
+task wrapper(type: Wrapper) {
     gradleVersion = '8.0.1'
 }
 
