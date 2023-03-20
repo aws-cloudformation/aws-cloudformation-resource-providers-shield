@@ -12,6 +12,8 @@ import software.amazon.awssdk.services.shield.model.CountAction;
 import software.amazon.awssdk.services.shield.model.CreateProtectionRequest;
 import software.amazon.awssdk.services.shield.model.CreateProtectionRequest.Builder;
 import software.amazon.awssdk.services.shield.model.CreateProtectionResponse;
+import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
+import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
 import software.amazon.awssdk.services.shield.model.Tag;
@@ -52,6 +54,21 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
             final CreateProtectionResponse createProtectionResponse =
                     proxy.injectCredentialsAndInvokeV2(createProtectionRequest.build(), this.client::createProtection);
+            final String protectionId = createProtectionResponse.protectionId();
+            logger.log(String.format("CreateHandler: new protection created id = %s", protectionId));
+            model.setProtectionId(protectionId);
+
+            final DescribeProtectionRequest describeProtectionRequest =
+                DescribeProtectionRequest.builder()
+                    .protectionId(protectionId)
+                    .build();
+
+            final DescribeProtectionResponse describeProtectionResponse =
+                proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
+
+            final String protectionArn = describeProtectionResponse.protection().protectionArn();
+            logger.log(String.format("CreateHandler: new protection created arn = %s", protectionArn));
+            model.setProtectionArn(protectionArn);
 
             associateHealthChecks(model.getHealthCheckArns(), createProtectionResponse.protectionId(), proxy);
             enableApplicationLayerAutomaticResponse(
@@ -59,7 +76,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     model.getResourceArn(),
                     proxy);
 
-            return readProtection(createProtectionResponse.protectionId(), proxy, logger);
+            return ProgressEvent.defaultSuccessHandler(model);
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()

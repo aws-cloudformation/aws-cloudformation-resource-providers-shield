@@ -89,8 +89,6 @@ public class CreateHandlerTest {
                                         .build())
                         .build();
 
-        registerListTags();
-
         doReturn(createProtectionResponse)
                 .when(this.proxy)
                 .injectCredentialsAndInvokeV2(any(CreateProtectionRequest.class), any());
@@ -116,18 +114,5 @@ public class CreateHandlerTest {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
-    }
-
-    private void registerListTags() {
-        ListTagsForResourceResponse tagResponse =
-                ListTagsForResourceResponse.builder()
-                        .tags(
-                                Tag.builder().key("k1").value("v1").build(),
-                                Tag.builder().key("k2").value("v2").build())
-                        .build();
-
-        doReturn(tagResponse)
-                .when(this.proxy)
-                .injectCredentialsAndInvokeV2(any(ListTagsForResourceRequest.class), any());
     }
 }

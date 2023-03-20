@@ -19,7 +19,7 @@ public class ProtectionTestData {
 
     public static final String PROTECTION_ID = "TEST_PROTECTION_ID";
     public static final String PROTECTION_ARN_TEMPLATE =
-            "arn:aws:shield::123456789012:protection/b12eca35-7df9-4653-9666-908246157dbe/";
+            "arn:aws:shield::123456789012:protection/";
     public static final String PROTECTION_ARN = PROTECTION_ARN_TEMPLATE + PROTECTION_ID;
 
     public static final String NEXT_TOKEN = "TEST_NEXT_TOKEN";
