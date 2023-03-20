@@ -3,6 +3,7 @@ package software.amazon.shield.protectiongroup;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DeleteProtectionGroupRequest;
+import software.amazon.awssdk.services.shield.model.ResourceNotFoundException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -37,6 +38,11 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
             proxy.injectCredentialsAndInvokeV2(deleteProtectionGroupRequest, this.client::deleteProtectionGroup);
 
+            return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                    .status(OperationStatus.SUCCESS)
+                    .build();
+
+        } catch (ResourceNotFoundException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.SUCCESS)
                     .build();

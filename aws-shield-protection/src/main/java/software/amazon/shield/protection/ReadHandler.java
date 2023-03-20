@@ -41,7 +41,6 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             final DescribeProtectionRequest describeProtectionRequest =
                     DescribeProtectionRequest.builder()
                             .protectionId(model.getProtectionId())
-                            .resourceArn(model.getResourceArn())
                             .build();
 
             final DescribeProtectionResponse describeProtectionResponse =
