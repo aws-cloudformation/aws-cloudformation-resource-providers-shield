@@ -119,6 +119,7 @@
       "permissions": [
         "shield:CreateProtection",
         "shield:DescribeProtection",
+        "shield:ListProtections",
         "shield:EnableApplicationLayerAutomaticResponse",
         "shield:AssociateHealthCheck"
       ]
