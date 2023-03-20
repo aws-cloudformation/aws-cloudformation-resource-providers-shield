@@ -43,6 +43,8 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String protectionArn = model.getProtectionArn();
+        logger.log(String.format("ReadHandler: %s", protectionArn));
 
         try {
             final Protection protection = getProtection(model, proxy);
@@ -56,7 +58,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                     model.getResourceArn(),
                     proxy);
 
-            return readProtection(protection.id(), proxy, logger);
+            return readProtection(protectionArn, proxy, logger);
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
@@ -204,13 +206,13 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
     }
 
     private ProgressEvent<ResourceModel, CallbackContext> readProtection(
-            @NonNull final String protectionId,
+            @NonNull final String protectionArn,
             @NonNull final AmazonWebServicesClientProxy proxy,
             @NonNull final Logger logger) {
 
         final ResourceModel readResourceModel =
                 ResourceModel.builder()
-                        .protectionId(protectionId)
+                        .protectionArn(protectionArn)
                         .build();
 
         return new ReadHandler(this.client).handleRequest(

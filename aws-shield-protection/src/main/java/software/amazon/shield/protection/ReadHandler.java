@@ -36,11 +36,14 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String protectionArn = model.getProtectionArn();
+        logger.log(String.format("ReadHandler: %s", protectionArn));
+        final String protectionId = protectionArn.substring(protectionArn.indexOf('/'));
 
         try {
             final DescribeProtectionRequest describeProtectionRequest =
                     DescribeProtectionRequest.builder()
-                            .protectionId(model.getProtectionId())
+                            .protectionId(protectionId)
                             .build();
 
             final DescribeProtectionResponse describeProtectionResponse =
