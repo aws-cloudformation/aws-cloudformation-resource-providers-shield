@@ -34,8 +34,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             final List<ResourceModel> models = new ArrayList<>();
 
             final DescribeDrtAccessResponse describeDrtAccessResponse =
-                    HandlerHelper.getDrtAccessDescribeResponse(proxy,
-                            client);
+                    HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
             if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .resourceModels(models)

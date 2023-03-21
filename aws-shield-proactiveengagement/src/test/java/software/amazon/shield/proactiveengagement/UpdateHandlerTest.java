@@ -215,6 +215,213 @@ public class UpdateHandlerTest {
     }
 
     @Test
+    public void handleRequest_InvalidRequest() {
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = updateHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.InvalidRequest);
+    }
+
+    @Test
+    public void handleRequest_UpdateContactListsUnderEngagementEnabled() {
+        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
+        // Mock describe subscription
+        final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
+                .subscription(Subscription.builder()
+                        .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
+                        .build())
+                .build();
+        doReturn(describeSubscriptionResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+
+        // Mock describe emergency contact list
+        final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
+                DescribeEmergencyContactSettingsResponse.builder()
+                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                        .build();
+        doReturn(describeEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+
+        // Mock update emergency contact list
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+                UpdateEmergencyContactSettingsResponse.builder()
+                        .build();
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
+
+        // Mock change propagation
+        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
+                ProgressEvent.progress(model, callbackContext);
+
+        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+                .emergencyContactList(ProactiveEngagementTestHelper.convertEmergencyContactList(ProactiveEngagementTestHelper.newEmergencyContactList))
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = updateHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(ProactiveEngagementTestHelper.convertEmergencyContactList(
+                ProactiveEngagementTestHelper.newEmergencyContactList));
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void handleRequest_UpdateContactListsUnderEngagementDisabled() {
+        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
+        // Mock describe subscription
+        final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
+                .subscription(Subscription.builder()
+                        .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED)
+                        .build())
+                .build();
+        doReturn(describeSubscriptionResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+
+        // Mock describe emergency contact list
+        final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
+                DescribeEmergencyContactSettingsResponse.builder()
+                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                        .build();
+        doReturn(describeEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+
+        // Mock update emergency contact list
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+                UpdateEmergencyContactSettingsResponse.builder()
+                        .build();
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
+
+        // Mock change propagation
+        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
+                ProgressEvent.progress(model, callbackContext);
+
+        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
+                .emergencyContactList(ProactiveEngagementTestHelper.convertEmergencyContactList(ProactiveEngagementTestHelper.newEmergencyContactList))
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = updateHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.DISABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(ProactiveEngagementTestHelper.convertEmergencyContactList(
+                ProactiveEngagementTestHelper.newEmergencyContactList));
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void handleRequest_UpdateContactListsAndEngagementStatus() {
+        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
+        // Mock describe subscription
+        final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
+                .subscription(Subscription.builder()
+                        .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED)
+                        .build())
+                .build();
+        doReturn(describeSubscriptionResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+
+        // Mock describe emergency contact list
+        final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
+                DescribeEmergencyContactSettingsResponse.builder()
+                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                        .build();
+        doReturn(describeEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+
+        // Mock update emergency contact list
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+                UpdateEmergencyContactSettingsResponse.builder()
+                        .build();
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
+
+        // Mock enable proactive engagement
+        final EnableProactiveEngagementResponse enableProactiveEngagementResponse =
+                EnableProactiveEngagementResponse.builder()
+                        .build();
+        doReturn(enableProactiveEngagementResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(EnableProactiveEngagementRequest.class), any());
+
+        // Mock change propagation
+        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
+                ProgressEvent.progress(model, callbackContext);
+
+        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+                .emergencyContactList(ProactiveEngagementTestHelper.convertEmergencyContactList(ProactiveEngagementTestHelper.newEmergencyContactList))
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = updateHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(ProactiveEngagementTestHelper.convertEmergencyContactList(
+                ProactiveEngagementTestHelper.newEmergencyContactList));
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
     public void handleRequest_AccountNotFoundFailure() {
         final ResourceModel model = ResourceModel.builder()
                 .accountId(ProactiveEngagementTestHelper.accountId)

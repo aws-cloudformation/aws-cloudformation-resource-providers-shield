@@ -37,41 +37,134 @@ public class UpdateHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext))
+                .then(progress -> HandlerHelper.describeSubscription(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext))
-                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
-                        proxyClient,
-                        model,
-                        callbackContext))
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
-                .then(progress -> {
-                    if (disableProactiveEngagement(input)) {
-                        return HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext);
-                    }
-                    return HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, callbackContext);
-                })
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                        callbackContext,
+                        logger))
+                .then(progress -> updateProactiveEngagement(proxy, proxyClient, input, model, callbackContext, logger))
                 .then(progress -> ProgressEvent.defaultSuccessHandler(input));
     }
 
     @Override
     protected ProgressEvent<ResourceModel, CallbackContext> validateInput(
-            ProgressEvent<ResourceModel, CallbackContext> progress,
-            CallbackContext callbackContext,
-            ResourceHandlerRequest<ResourceModel> request) {
+            final ProgressEvent<ResourceModel, CallbackContext> progress,
+            final CallbackContext callbackContext,
+            final ResourceHandlerRequest<ResourceModel> request) {
+        ResourceModel model = request.getDesiredResourceState();
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                     callbackContext,
                     HandlerErrorCode.NotFound,
                     HandlerHelper.PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG);
         }
+        // If enable proactive engagement, it needs at least one emergency contact list
+        if (model.getProactiveEngagementStatus().equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString())
+                && (model.getEmergencyContactList() == null || model.getEmergencyContactList().isEmpty())) {
+            return ProgressEvent.failed(request.getDesiredResourceState(),
+                    callbackContext,
+                    HandlerErrorCode.InvalidRequest,
+                    "Invalid update request input");
+        }
         return progress;
     }
 
-    private boolean disableProactiveEngagement(final ResourceModel input) {
-        return input.getProactiveEngagementStatus().equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString());
+    private ProgressEvent<ResourceModel, CallbackContext> updateProactiveEngagement(
+            final AmazonWebServicesClientProxy proxy,
+            final ProxyClient<ShieldClient> proxyClient,
+            final ResourceModel model,
+            final ResourceModel describeResult,
+            final CallbackContext context,
+            final Logger logger
+    ) {
+        if (describeResult.getProactiveEngagementStatus()
+                .equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString())) {
+            return updateProactiveEngagementStatusFirst(proxy, proxyClient, model, context, logger);
+        }
+        return updateEmergencyContactListFirst(proxy, proxyClient, model, context, logger);
+    }
+
+    /**
+     * Current proactive engagement status is *enabled*
+     * Update proactive engagement status first then update emergency contact list in order to follow the rule that
+     * there will be at least one emergency contact if enabling proactive engagement
+     * Ex:
+     *  Proactive engagement status:    enable         -> disable
+     *  Emergency contact list:         [ contact1 ]   -> []
+     */
+    private ProgressEvent<ResourceModel, CallbackContext> updateProactiveEngagementStatusFirst(
+            final AmazonWebServicesClientProxy proxy,
+            final ProxyClient<ShieldClient> proxyClient,
+            final ResourceModel model,
+            final CallbackContext context,
+            final Logger logger
+    ) {
+        return ProgressEvent.progress(model, context)
+                .then(progress -> {
+                    String inputStatus = model.getProactiveEngagementStatus();
+                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString()))
+                        return progress;
+                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger)
+                            .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+                })
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        context,
+                        logger))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+    }
+
+    /**
+     * Current proactive engagement status is *disabled*
+     * Update emergency contact list first then update proactive engagement status in order to follow the rule that
+     * there will be at least one emergency contact if enabling proactive engagement
+     * Ex:
+     *  Proactive engagement status:    disable -> enable
+     *  Emergency contact list:         []      -> [ contact1 ]
+     */
+    private ProgressEvent<ResourceModel, CallbackContext> updateEmergencyContactListFirst(
+            final AmazonWebServicesClientProxy proxy,
+            final ProxyClient<ShieldClient> proxyClient,
+            final ResourceModel model,
+            final CallbackContext context,
+            final Logger logger
+    ) {
+        return ProgressEvent.progress(model, context)
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        context,
+                        logger))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> {
+                    String inputStatus = model.getProactiveEngagementStatus();
+                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString()))
+                        return progress;
+                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger)
+                            .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+                });
+    }
+
+    private ProgressEvent<ResourceModel, CallbackContext> updateProactiveEngagement(
+            final AmazonWebServicesClientProxy proxy,
+            final ProxyClient<ShieldClient> proxyClient,
+            final ResourceModel model,
+            final CallbackContext context,
+            final Logger logger
+    ) {
+        if (disableProactiveEngagement(model)) {
+            return HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, context, logger);
+        }
+        return HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, context, logger);
+    }
+
+    private boolean disableProactiveEngagement(final ResourceModel model) {
+        return model.getProactiveEngagementStatus().equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString());
     }
 }

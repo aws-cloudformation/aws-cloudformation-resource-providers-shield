@@ -13,7 +13,6 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
 import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
-import software.amazon.shield.proactiveengagement.helper.ListHandlerHelper;
 
 public class ListHandler extends BaseHandlerStd {
 
@@ -39,11 +38,12 @@ public class ListHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext))
-                .then(progress -> ListHandlerHelper.describeEmergencyContactSettings(proxy,
+                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext))
+                        callbackContext,
+                        logger))
                 .then(progress -> {
                     final List<ResourceModel> models = new ArrayList<>();
                     models.add(ResourceModel.builder()
