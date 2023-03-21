@@ -1,0 +1,155 @@
+{
+  "PropertyTypes" : {
+    "AWS::Shield::Subscription.SubscriptionLimits" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-subscriptionlimits.html",
+      "Properties" : {
+        "ProtectionGroupLimits" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-subscriptionlimits.html#cfn-shield-subscription-subscriptionlimits-protectiongrouplimits",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "Type" : "ProtectionGroupLimits"
+        },
+        "ProtectionLimits" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-subscriptionlimits.html#cfn-shield-subscription-subscriptionlimits-protectionlimits",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "Type" : "ProtectionLimits"
+        }
+      }
+    },
+    "AWS::Shield::Subscription.ProtectionGroupPatternTypeLimits" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouppatterntypelimits.html",
+      "Properties" : {
+        "ArbitraryPatternLimits" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouppatterntypelimits.html#cfn-shield-subscription-protectiongrouppatterntypelimits-arbitrarypatternlimits",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "Type" : "ProtectionGroupArbitraryPatternLimits"
+        }
+      }
+    },
+    "AWS::Shield::Subscription.ProtectionLimits" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectionlimits.html",
+      "Properties" : {
+        "ProtectedResourceTypeLimits" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectionlimits.html#cfn-shield-subscription-protectionlimits-protectedresourcetypelimits",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "Type" : "List",
+          "ItemType" : "Limit",
+          "DuplicatesAllowed" : true
+        }
+      }
+    },
+    "AWS::Shield::Subscription.Limit" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-limit.html",
+      "Properties" : {
+        "Type" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-limit.html#cfn-shield-subscription-limit-type",
+          "UpdateType" : "Mutable",
+          "Required" : false,
+          "PrimitiveType" : "String"
+        },
+        "Max" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-limit.html#cfn-shield-subscription-limit-max",
+          "UpdateType" : "Mutable",
+          "Required" : false,
+          "PrimitiveType" : "Integer"
+        }
+      }
+    },
+    "AWS::Shield::Subscription.ProtectionGroupLimits" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouplimits.html",
+      "Properties" : {
+        "MaxProtectionGroups" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouplimits.html#cfn-shield-subscription-protectiongrouplimits-maxprotectiongroups",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "PrimitiveType" : "Integer"
+        },
+        "PatternTypeLimits" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouplimits.html#cfn-shield-subscription-protectiongrouplimits-patterntypelimits",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "Type" : "ProtectionGroupPatternTypeLimits"
+        }
+      }
+    },
+    "AWS::Shield::Subscription.ProtectionGroupArbitraryPatternLimits" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouparbitrarypatternlimits.html",
+      "Properties" : {
+        "MaxMembers" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-shield-subscription-protectiongrouparbitrarypatternlimits.html#cfn-shield-subscription-protectiongrouparbitrarypatternlimits-maxmembers",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "PrimitiveType" : "Integer"
+        }
+      }
+    }
+  },
+  "ResourceType" : {
+    "AWS::Shield::Subscription" : {
+      "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-shield-subscription.html",
+      "Properties" : {
+        "AutoRenew" : {
+          "Documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-shield-subscription.html#cfn-shield-subscription-autorenew",
+          "UpdateType" : "Mutable",
+          "Required" : true,
+          "PrimitiveType" : "String"
+        }
+      },
+      "Attributes" : {
+        "EndTime" : {
+          "PrimitiveType" : "String"
+        },
+        "SubscriptionLimits" : {
+          "Type" : "SubscriptionLimits"
+        },
+        "StartTime" : {
+          "PrimitiveType" : "String"
+        },
+        "SubscriptionLimits.ProtectionGroupLimits.PatternTypeLimits.ArbitraryPatternLimits.MaxMembers" : {
+          "PrimitiveType" : "Integer"
+        },
+        "TimeCommitmentInSeconds" : {
+          "PrimitiveType" : "Integer"
+        },
+        "SubscriptionLimits.ProtectionGroupLimits" : {
+          "Type" : "ProtectionGroupLimits"
+        },
+        "Limits" : {
+          "Type" : "List",
+          "ItemType" : "Limit"
+        },
+        "ProactiveEngagementStatus" : {
+          "PrimitiveType" : "String"
+        },
+        "SubscriptionLimits.ProtectionLimits.ProtectedResourceTypeLimits" : {
+          "Type" : "List",
+          "ItemType" : "Limit"
+        },
+        "SubscriptionLimits.ProtectionGroupLimits.MaxProtectionGroups" : {
+          "PrimitiveType" : "Integer"
+        },
+        "SubscriptionLimits.ProtectionLimits" : {
+          "Type" : "ProtectionLimits"
+        },
+        "SubscriptionLimits.ProtectionGroupLimits.PatternTypeLimits" : {
+          "Type" : "ProtectionGroupPatternTypeLimits"
+        },
+        "SubscriptionLimits.ProtectionGroupLimits.PatternTypeLimits.ArbitraryPatternLimits" : {
+          "Type" : "ProtectionGroupArbitraryPatternLimits"
+        },
+        "SubscriptionArn" : {
+          "PrimitiveType" : "String"
+        }
+      },
+      "AllowCreationPolicy" : "false",
+      "AllowUpdatePolicy" : "false",
+      "DeletionPolicy" : {
+        "Default" : "Delete",
+        "AllowedValues" : [ "Delete", "Retain" ]
+      }
+    }
+  }
+}
