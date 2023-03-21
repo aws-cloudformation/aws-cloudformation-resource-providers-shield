@@ -36,8 +36,7 @@
       "description": "The ARN (Amazon Resource Name) of the resource to be protected.",
       "type": "string",
       "minLength": 1,
-      "maxLength": 2048,
-      "pattern": "^arn:aws.*"
+      "maxLength": 2048
     },
     "HealthCheckArns": {
       "description": "The Amazon Resource Names (ARNs) of the health check to associate with the protection.",
@@ -46,8 +45,7 @@
       "items": {
         "type": "string",
         "minLength": 1,
-        "maxLength": 2048,
-        "pattern": "^arn:aws:route53:::healthcheck/\\S{36}$"
+        "maxLength": 2048
       }
     },
     "ApplicationLayerAutomaticResponseConfiguration": {

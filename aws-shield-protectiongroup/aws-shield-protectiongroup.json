@@ -41,8 +41,7 @@
       "items": {
         "type": "string",
         "minLength": 1,
-        "maxLength": 2048,
-        "pattern": "^arn:aws.*"
+        "maxLength": 2048
       }
     },
     "ResourceType": {
