@@ -1,6 +1,7 @@
 package software.amazon.shield.proactiveengagement.helper;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
+import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -34,8 +36,7 @@ public class HandlerHelper {
 
     public static boolean callerAccountIdMatchesResourcePrimaryId(ResourceHandlerRequest<ResourceModel> request) {
         return request.getAwsAccountId() != null && request.getDesiredResourceState()
-                .getPrimaryIdentifier()
-                .getString("/properties/AccountId")
+                .getAccountId()
                 .equals(request.getAwsAccountId());
     }
 
@@ -56,25 +57,30 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context
+            final CallbackContext context,
+            final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
+            logger.log("Starting to describe emergency contact.");
             return proxy.initiate("shield::describe-emergency-contact", proxyClient, model, context)
                     .translateToServiceRequest((m) -> DescribeEmergencyContactSettingsRequest.builder().build())
                     .makeServiceCall((request, client) -> proxy.injectCredentialsAndInvokeV2(request,
                             shieldClient::describeEmergencyContactSettings))
-                    .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
-                            callbackContext,
-                            ExceptionConverter.convertToErrorCode((RuntimeException) e),
-                            e.getMessage()))
+                    .handleError((request, e, client, m, callbackContext) -> {
+                        logger.log("Caught exception during describing emergency contact: " + e);
+                        return ProgressEvent.failed(m,
+                                callbackContext,
+                                ExceptionConverter.convertToErrorCode((RuntimeException) e),
+                                e.getMessage());
+                    })
                     .done((r) -> {
-                        if (!r.hasEmergencyContactList() && model.getProactiveEngagementStatus()
-                                .equals(ProactiveEngagementStatus.DISABLED.toString())) {
-                            return ProgressEvent.failed(model,
-                                    context,
-                                    HandlerErrorCode.NotFound,
-                                    HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
-                        }
+                        final List<software.amazon.awssdk.services.shield.model.EmergencyContact> emergencyContactList =
+                                r.hasEmergencyContactList()
+                                        ? r.emergencyContactList()
+                                        : Collections.emptyList();
+                        model.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(
+                                emergencyContactList));
+                        logger.log("Succeed describing emergency contact.");
                         return ProgressEvent.progress(model, context);
                     });
         }
@@ -84,25 +90,34 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context
+            final CallbackContext context,
+            final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
+            logger.log("Starting to describe subscription.");
             return proxy.initiate("shield::describe-subscription", proxyClient, model, context)
                     .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
                     .makeServiceCall((request, client) -> proxy.injectCredentialsAndInvokeV2(request,
                             shieldClient::describeSubscription))
-                    .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
-                            callbackContext,
-                            ExceptionConverter.convertToErrorCode((RuntimeException) e),
-                            e.getMessage()))
+                    .handleError((request, e, client, m, callbackContext) -> {
+                        logger.log("Caught exception during describing subscription: " + e);
+                        return ProgressEvent.failed(m,
+                                callbackContext,
+                                ExceptionConverter.convertToErrorCode((RuntimeException) e),
+                                e.getMessage());
+                    })
                     .done(res -> {
                         if (!HandlerHelper.doesProactiveEngagementStatusExist(res)) {
+                            logger.log(
+                                    "Failed to describe subscription due to no account being proactive engagement " +
+                                            "enabled.");
                             return ProgressEvent.failed(model,
                                     context,
                                     HandlerErrorCode.NotFound,
                                     HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
                         }
                         model.setProactiveEngagementStatus(res.subscription().proactiveEngagementStatusAsString());
+                        logger.log("Succeed describing subscription.");
                         return ProgressEvent.progress(model, context);
                     });
         }
@@ -112,18 +127,26 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context
+            final CallbackContext context,
+            final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
+            logger.log("Starting to disable proactive engagement.");
             return proxy.initiate("shield::disable-proactive-engagement", proxyClient, model, context)
                     .translateToServiceRequest(m -> DisableProactiveEngagementRequest.builder().build())
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::disableProactiveEngagement))
-                    .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
-                            callbackContext,
-                            ExceptionConverter.convertToErrorCode((RuntimeException) e),
-                            e.getMessage()))
-                    .done(res -> ProgressEvent.progress(model, context));
+                    .handleError((request, e, client, m, callbackContext) -> {
+                        logger.log("Caught exception during disabling proactive engagement: " + e);
+                        return ProgressEvent.failed(m,
+                                callbackContext,
+                                ExceptionConverter.convertToErrorCode((RuntimeException) e),
+                                e.getMessage());
+                    })
+                    .done(res -> {
+                        logger.log("Succeed disabling proactive engagement.");
+                        return ProgressEvent.progress(model, context);
+                    });
         }
     }
 
@@ -131,18 +154,26 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context
+            final CallbackContext context,
+            final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
+            logger.log("Starting to enable proactive engagement.");
             return proxy.initiate("shield::enable-proactive-engagement", proxyClient, model, context)
                     .translateToServiceRequest(m -> EnableProactiveEngagementRequest.builder().build())
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::enableProactiveEngagement))
-                    .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
-                            callbackContext,
-                            ExceptionConverter.convertToErrorCode((RuntimeException) e),
-                            e.getMessage()))
-                    .done(res -> ProgressEvent.progress(model, context));
+                    .handleError((request, e, client, m, callbackContext) -> {
+                        logger.log("Caught exception during enabling proactive engagement: " + e);
+                        return ProgressEvent.failed(m,
+                                callbackContext,
+                                ExceptionConverter.convertToErrorCode((RuntimeException) e),
+                                e.getMessage());
+                    })
+                    .done(res -> {
+                        logger.log("Succeed enabling proactive engagement.");
+                        return ProgressEvent.progress(model, context);
+                    });
         }
     }
 
@@ -150,20 +181,28 @@ public class HandlerHelper {
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
             final ResourceModel model,
-            final CallbackContext context
+            final CallbackContext context,
+            final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
+            logger.log("Starting to update proactive engagement settings.");
             return proxy.initiate("shield::update-emergency-contact-settings", proxyClient, model, context)
                     .translateToServiceRequest(m -> UpdateEmergencyContactSettingsRequest.builder()
                             .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(model.getEmergencyContactList()))
                             .build())
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::updateEmergencyContactSettings))
-                    .handleError((request, e, client, m, callbackContext) -> ProgressEvent.failed(m,
-                            callbackContext,
-                            ExceptionConverter.convertToErrorCode((RuntimeException) e),
-                            e.getMessage()))
-                    .done(res -> ProgressEvent.progress(model, context));
+                    .handleError((request, e, client, m, callbackContext) -> {
+                        logger.log("Caught exception during updating emergency contact settings: " + e);
+                        return ProgressEvent.failed(m,
+                                callbackContext,
+                                ExceptionConverter.convertToErrorCode((RuntimeException) e),
+                                e.getMessage());
+                    })
+                    .done(res -> {
+                        logger.log("Succeed updating proactive engagement settings.");
+                        return ProgressEvent.progress(model, context);
+                    });
         }
     }
 

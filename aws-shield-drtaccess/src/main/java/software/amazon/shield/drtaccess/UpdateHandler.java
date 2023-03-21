@@ -35,9 +35,11 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             final CallbackContext callbackContext,
             final Logger logger) {
 
+        logger.log("Starting to handle update request.");
         final ResourceModel model = request.getDesiredResourceState();
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
+            logger.log("Failed to handle update request due to account ID not found.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(HandlerErrorCode.NotFound)
@@ -47,9 +49,9 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
         try {
             final DescribeDrtAccessResponse describeDrtAccessResponse =
-                    HandlerHelper.getDrtAccessDescribeResponse(proxy,
-                            client);
+                    HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
             if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+                logger.log("Failed to handle update request due to account not having DRT role associated.");
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.NotFound)
@@ -62,11 +64,16 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                     .orElse(Collections.emptyList()));
 
             // update logBucketList
-            updateLogBucketList(proxy, oldLogBucketList, newLogBucketList);
+            logger.log("Starting to update DRT log bucket list.");
+            updateLogBucketList(proxy, oldLogBucketList, newLogBucketList, logger);
+            logger.log("Succeed updating DRT log bucket list.");
             // add new roleArn
             if (needToUpdateDrtRole(model.getRoleArn(), describeDrtAccessResponse)) {
-                HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn());
+                logger.log("Starting to update DRT access role.");
+                HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn(), logger);
+                logger.log("Succeed updating DRT access role.");
             }
+            logger.log("Succeed handling update request.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .resourceModel(model)
                     .status(OperationStatus.SUCCESS)
@@ -83,16 +90,17 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
     private void updateLogBucketList(
             final AmazonWebServicesClientProxy proxy,
             ImmutableList<String> oldList,
-            ImmutableList<String> newList) {
+            ImmutableList<String> newList,
+            Logger logger) {
         List<String> removeList = new ArrayList<>(oldList);
         List<String> addList = new ArrayList<>(newList);
         removeList.removeAll(newList);
         addList.removeAll(oldList);
 
         // remove deleted list
-        HandlerHelper.disassociateDrtLogBucketList(proxy, client, removeList);
+        HandlerHelper.disassociateDrtLogBucketList(proxy, client, removeList, logger);
         // add new list
-        HandlerHelper.associateDrtLogBucketList(proxy, client, addList);
+        HandlerHelper.associateDrtLogBucketList(proxy, client, addList, logger);
     }
 
     private boolean needToUpdateDrtRole(String roleArn, DescribeDrtAccessResponse describeDrtAccessResponse) {

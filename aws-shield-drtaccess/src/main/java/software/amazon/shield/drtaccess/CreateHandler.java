@@ -32,21 +32,23 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            DescribeDrtAccessResponse describeDrtAccessResponse = HandlerHelper.getDrtAccessDescribeResponse(proxy, client);
+            DescribeDrtAccessResponse describeDrtAccessResponse = HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
             if (!HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+                logger.log("Failed to handle create request due to account ID has been associated with DRT role and DRT log bucket list.");
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.ResourceConflict)
                         .message(HandlerHelper.DRTACCESS_CONFLICT_ERROR_MSG)
                         .build();
             }
-            HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn());
-            HandlerHelper.associateDrtLogBucketList(proxy, client, model.getLogBucketList());
+            HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn(), logger);
+            HandlerHelper.associateDrtLogBucketList(proxy, client, model.getLogBucketList(), logger);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .resourceModel(model)
                     .status(OperationStatus.SUCCESS)
                     .build();
         } catch (RuntimeException e) {
+            logger.log("Caught exception during associating DRT role and DRT log bucket list: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))
