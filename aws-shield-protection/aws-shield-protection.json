@@ -29,14 +29,14 @@
       "description": "Friendly name for the Protection.",
       "type": "string",
       "minLength": 1,
-      "maxLength": 128
+      "maxLength": 128,
+      "pattern": "[ a-zA-Z0-9_\\.\\-]*"
     },
     "ResourceArn": {
       "description": "The ARN (Amazon Resource Name) of the resource to be protected.",
       "type": "string",
       "minLength": 1,
-      "maxLength": 2048,
-      "pattern": "^arn:aws.*"
+      "maxLength": 2048
     },
     "HealthCheckArns": {
       "description": "The Amazon Resource Names (ARNs) of the health check to associate with the protection.",
@@ -44,7 +44,8 @@
       "insertionOrder": false,
       "items": {
         "type": "string",
-        "pattern": "^arn:aws:route53:::healthcheck/\\S{36}$"
+        "minLength": 1,
+        "maxLength": 2048
       }
     },
     "ApplicationLayerAutomaticResponseConfiguration": {
@@ -95,14 +96,12 @@
             "Block": {
               "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Block` action.\nYou must specify exactly one action, either `Block` or `Count`.",
               "type": "object",
-              "additionalProperties": false,
-              "const": {}
+              "additionalProperties": false
             },
             "Count": {
               "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Count` action.\nYou must specify exactly one action, either `Block` or `Count`.",
               "type": "object",
-              "additionalProperties": false,
-              "const": {}
+              "additionalProperties": false
             }
           }
         },

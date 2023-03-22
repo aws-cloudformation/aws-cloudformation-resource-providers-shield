@@ -28,11 +28,15 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String protectionArn = model.getProtectionArn();
+        logger.log(String.format("DeleteHandler: delete protection arn = %s", protectionArn));
+        final String protectionId = protectionArn.substring(protectionArn.indexOf('/'));
+        logger.log(String.format("DeleteHandler: delete protection id = %s", protectionId));
 
         try {
             final DeleteProtectionRequest deleteProtectionRequest =
                     DeleteProtectionRequest.builder()
-                            .protectionId(model.getProtectionId())
+                            .protectionId(protectionId)
                             .build();
 
             proxy.injectCredentialsAndInvokeV2(deleteProtectionRequest, this.client::deleteProtection);
