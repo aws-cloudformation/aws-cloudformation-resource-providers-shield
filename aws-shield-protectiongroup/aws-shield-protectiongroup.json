@@ -4,6 +4,8 @@
   "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-shield.git",
   "primaryIdentifier": ["/properties/ProtectionGroupArn"],
   "readOnlyProperties": ["/properties/ProtectionGroupArn"],
+  "createOnlyProperties": ["/properties/ProtectionGroupId"],
+  "replacementStrategy": "delete_then_create",
   "tagging": {
     "taggable": true,
     "tagProperty": "/properties/Tags",

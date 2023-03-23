@@ -120,7 +120,8 @@
         "shield:DescribeProtection",
         "shield:ListProtections",
         "shield:EnableApplicationLayerAutomaticResponse",
-        "shield:AssociateHealthCheck"
+        "shield:AssociateHealthCheck",
+        "ec2:DescribeAddresses"
       ]
     },
     "delete": {

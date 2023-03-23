@@ -10,6 +10,7 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.HandlerHelper;
 
 @RequiredArgsConstructor
 public class DeleteHandler extends BaseHandler<CallbackContext> {
@@ -30,7 +31,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
         final String protectionArn = model.getProtectionArn();
         logger.log(String.format("DeleteHandler: delete protection arn = %s", protectionArn));
-        final String protectionId = protectionArn.substring(protectionArn.indexOf('/'));
+        final String protectionId = HandlerHelper.protectionArnToId(protectionArn);
         logger.log(String.format("DeleteHandler: delete protection id = %s", protectionId));
 
         try {
