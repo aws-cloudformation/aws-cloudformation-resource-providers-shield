@@ -135,7 +135,7 @@ public class ListHandlerTest {
     }
 
     @Test
-    public void handleRequest_NoProactiveEngagementContactsFailure() {
+    public void handleRequest_NoProactiveEngagementContactsSuccess() {
         doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
                 .subscription(Subscription.builder()
@@ -158,12 +158,11 @@ public class ListHandlerTest {
                         .build())
                 .nextToken("randomNextToken")
                 .build();
-
         final ProgressEvent<ResourceModel, CallbackContext> response =
                 listHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
-        assertThat(response.getResourceModels().isEmpty()).isEqualTo(true);
+        assertThat(response.getResourceModels().get(0).getAccountId()).isEqualTo(ProactiveEngagementTestHelper.accountId);
     }
 }

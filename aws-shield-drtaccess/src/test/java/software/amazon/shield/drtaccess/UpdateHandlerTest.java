@@ -180,7 +180,6 @@ public class UpdateHandlerTest {
 
     @Test
     public void handleRequest_AccountNotFoundFailure() {
-
         final ResourceModel model = ResourceModel.builder()
                 .accountId(DrtAccessTestHelper.accountId)
                 .build();

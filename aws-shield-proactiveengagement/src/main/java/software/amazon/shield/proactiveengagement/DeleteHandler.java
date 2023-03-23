@@ -1,7 +1,6 @@
 package software.amazon.shield.proactiveengagement;
 
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -22,7 +21,6 @@ public class DeleteHandler extends BaseHandlerStd {
             ShieldClient shieldClient,
             EventualConsistencyHandlerHelper<ResourceModel, CallbackContext> eventualConsistencyHandlerHelper) {
         super(shieldClient, eventualConsistencyHandlerHelper);
-
     }
 
     @Override
@@ -38,17 +36,19 @@ public class DeleteHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext))
+                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext, logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext))
-                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext))
+                        callbackContext,
+                        logger))
+                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
-                        callbackContext))
+                        callbackContext,
+                        logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> ProgressEvent.defaultSuccessHandler(input));
     }
@@ -63,15 +63,6 @@ public class DeleteHandler extends BaseHandlerStd {
                     callbackContext,
                     HandlerErrorCode.NotFound,
                     HandlerHelper.PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG);
-        }
-        final ResourceModel model = request.getDesiredResourceState();
-        if (model.getProactiveEngagementStatus()
-                .equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString()) || !model.getEmergencyContactList()
-                .isEmpty()) {
-            return ProgressEvent.failed(request.getDesiredResourceState(),
-                    callbackContext,
-                    HandlerErrorCode.InvalidRequest,
-                    "Invalid delete request input");
         }
         return progress;
     }

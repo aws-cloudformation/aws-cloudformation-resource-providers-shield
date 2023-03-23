@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.shield.model.DisassociateDrtLogBucketResp
 import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleRequest;
 import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.drtaccess.ResourceModel;
 
@@ -37,71 +38,97 @@ public class HandlerHelper {
 
     public static DescribeDrtAccessResponse getDrtAccessDescribeResponse(
             AmazonWebServicesClientProxy proxy,
-            ShieldClient client) {
-        return proxy.injectCredentialsAndInvokeV2(
+            ShieldClient client,
+            Logger logger) {
+        logger.log("Starting to subscribe DRT access.");
+        DescribeDrtAccessResponse describeDrtAccessResponse =  proxy.injectCredentialsAndInvokeV2(
                 DescribeDrtAccessRequest.builder().build(), client::describeDRTAccess);
+        logger.log("Succeed subscribing DRT access.");
+        return describeDrtAccessResponse;
     }
 
     public static DisassociateDrtLogBucketResponse disassociateDrtLogBucket(
             AmazonWebServicesClientProxy proxy,
             ShieldClient client,
-            String logBucket) {
+            String logBucket,
+            Logger logger) {
+        logger.log("Starting to disassociate DRT log bucket " + logBucket);
         DisassociateDrtLogBucketRequest disassociateDrtLogBucketRequest = DisassociateDrtLogBucketRequest.builder()
                 .logBucket(logBucket)
                 .build();
-        return proxy.injectCredentialsAndInvokeV2(
+        DisassociateDrtLogBucketResponse disassociateDrtLogBucketResponse =  proxy.injectCredentialsAndInvokeV2(
                 disassociateDrtLogBucketRequest, client::disassociateDRTLogBucket
         );
+        logger.log("Succeed disassociating DRT log bucket " + logBucket);
+        return disassociateDrtLogBucketResponse;
     }
 
     public static void disassociateDrtLogBucketList(
             AmazonWebServicesClientProxy proxy,
             ShieldClient client,
-            List<String> logBucketList) {
+            List<String> logBucketList,
+            Logger logger) {
         if (logBucketList == null || logBucketList.isEmpty()) {
             return;
         }
-        logBucketList.forEach(logBucket -> disassociateDrtLogBucket(proxy, client, logBucket));
+        logger.log("Starting to disassociate DRT log bucket list with size ." + logBucketList.size());
+        logBucketList.forEach(logBucket -> disassociateDrtLogBucket(proxy, client, logBucket, logger));
+        logger.log("Succeed disassociating DRT log bucket list.");
     }
 
     public static DisassociateDrtRoleResponse disassociateDrtRole(
             AmazonWebServicesClientProxy proxy,
-            ShieldClient client) {
+            ShieldClient client,
+            Logger logger) {
+        logger.log("Starting to disassociate DRT role");
         DisassociateDrtRoleRequest disassociateDrtRoleRequest = DisassociateDrtRoleRequest.builder().build();
-        return proxy.injectCredentialsAndInvokeV2(
+        DisassociateDrtRoleResponse disassociateDrtRoleResponse =  proxy.injectCredentialsAndInvokeV2(
                 disassociateDrtRoleRequest, client::disassociateDRTRole
         );
+        logger.log("Succeed disassociating DRT role");
+        return disassociateDrtRoleResponse;
     }
 
     public static void associateDrtLogBucketList(
             AmazonWebServicesClientProxy proxy,
             ShieldClient client,
-            List<String> logBucketList) {
+            List<String> logBucketList,
+            Logger logger) {
         if (logBucketList == null || logBucketList.isEmpty()) {
             return;
         }
-        logBucketList.forEach(logBucket -> associateDrtLogBucket(proxy, client, logBucket));
+        logger.log("Starting to associate DRT log bucket list with size ." + logBucketList.size());
+        logBucketList.forEach(logBucket -> associateDrtLogBucket(proxy, client, logBucket, logger));
+        logger.log("Succeed associating DRT log bucket list.");
     }
 
     public static AssociateDrtLogBucketResponse associateDrtLogBucket(
             AmazonWebServicesClientProxy proxy,
             ShieldClient client,
-            String logBucket) {
+            String logBucket,
+            Logger logger) {
+        logger.log("Starting to associate DRT log bucket " + logBucket);
         AssociateDrtLogBucketRequest associateDrtLogBucketRequest = AssociateDrtLogBucketRequest.builder()
                 .logBucket(logBucket)
                 .build();
-        return proxy.injectCredentialsAndInvokeV2(
+        AssociateDrtLogBucketResponse associateDrtLogBucketResponse =  proxy.injectCredentialsAndInvokeV2(
                 associateDrtLogBucketRequest, client::associateDRTLogBucket);
+        logger.log("Succeed associating DRT log bucket " + logBucket);
+        return associateDrtLogBucketResponse;
     }
 
     public static AssociateDrtRoleResponse associateDrtRole(
             AmazonWebServicesClientProxy proxy,
             ShieldClient client,
-            String roleArn) {
+            String roleArn,
+            Logger logger) {
+        logger.log("Starting to associate DRT role " + roleArn);
         AssociateDrtRoleRequest associateDrtRoleRequest = AssociateDrtRoleRequest.builder()
                 .roleArn(roleArn)
                 .build();
-        return proxy.injectCredentialsAndInvokeV2(
+        AssociateDrtRoleResponse associateDrtRoleResponse =  proxy.injectCredentialsAndInvokeV2(
                 associateDrtRoleRequest, client::associateDRTRole);
+        logger.log("Succeed associating DRT role " + roleArn);
+        return associateDrtRoleResponse;
     }
 }
