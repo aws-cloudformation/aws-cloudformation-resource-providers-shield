@@ -32,7 +32,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
-            logger.log("Failed to handle delete request due to account ID not found.");
+            logger.log("[Error] - Failed to handle delete request due to account ID not found.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(HandlerErrorCode.NotFound)
@@ -43,7 +43,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
         try {
             final DescribeDrtAccessResponse describeDrtAccessResponse =
                     HandlerHelper.getDrtAccessDescribeResponse(proxy,
-                    client, logger);
+                            client, logger);
             if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
@@ -51,14 +51,17 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
                         .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
                         .build();
             }
-            HandlerHelper.disassociateDrtLogBucketList(proxy, client, describeDrtAccessResponse.logBucketList(), logger);
+            HandlerHelper.disassociateDrtLogBucketList(proxy,
+                    client,
+                    describeDrtAccessResponse.logBucketList(),
+                    logger);
             HandlerHelper.disassociateDrtRole(proxy, client, logger);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .resourceModel(model)
                     .status(OperationStatus.SUCCESS)
                     .build();
         } catch (RuntimeException e) {
-            logger.log("Caught exception during disassociating DRT log bucket list and DRT role: " + e);
+            logger.log("[Error] - Caught exception during disassociating DRT log bucket list and DRT role: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))

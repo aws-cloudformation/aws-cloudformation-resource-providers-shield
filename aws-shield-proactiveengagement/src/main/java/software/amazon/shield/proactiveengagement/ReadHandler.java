@@ -34,7 +34,11 @@ public class ReadHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(model, callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> HandlerHelper.describeSubscription(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
@@ -49,7 +53,7 @@ public class ReadHandler extends BaseHandlerStd {
             final CallbackContext callbackContext,
             ResourceHandlerRequest<ResourceModel> request) {
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
-            return ProgressEvent.failed(request.getDesiredResourceState(),
+            return ProgressEvent.failed(ResourceModel.builder().accountId(request.getAwsAccountId()).build(),
                     callbackContext,
                     HandlerErrorCode.NotFound,
                     HandlerHelper.PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG);

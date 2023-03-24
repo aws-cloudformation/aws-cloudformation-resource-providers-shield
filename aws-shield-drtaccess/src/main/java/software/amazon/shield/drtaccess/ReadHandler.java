@@ -29,7 +29,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
-            logger.log("Failed to handle read request due to account ID not found.");
+            logger.log("[Error] - Failed to handle read request due to account ID not found.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(HandlerErrorCode.NotFound)

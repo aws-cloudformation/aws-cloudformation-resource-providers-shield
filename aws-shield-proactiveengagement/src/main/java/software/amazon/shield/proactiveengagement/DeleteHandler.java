@@ -1,5 +1,7 @@
 package software.amazon.shield.proactiveengagement;
 
+import java.util.Collections;
+
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
@@ -33,17 +35,25 @@ public class DeleteHandler extends BaseHandlerStd {
 
         final ResourceModel input = request.getDesiredResourceState();
         final ResourceModel model = HandlerHelper.copyNewModel(input);
+        model.setEmergencyContactList(Collections.emptyList());
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> HandlerHelper.describeSubscription(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
                         callbackContext,
                         logger))
-                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext, logger))
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
                         model,

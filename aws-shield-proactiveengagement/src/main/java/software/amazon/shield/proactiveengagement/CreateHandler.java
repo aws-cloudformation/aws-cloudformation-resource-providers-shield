@@ -42,8 +42,8 @@ public class CreateHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> describeSubscription(proxy, proxyClient, model, callbackContext, logger))
-                .then(progress -> associateProactiveEngagement(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> describeSubscription(proxy, request, proxyClient, callbackContext, logger))
+                .then(progress -> associateProactiveEngagement(proxy, request, proxyClient, callbackContext, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> {
                     model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
@@ -61,26 +61,27 @@ public class CreateHandler extends BaseHandlerStd {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                     callbackContext,
                     HandlerErrorCode.InvalidRequest,
-                    "Missing at least one emergency contact");
+                    "[Error] - Input validation failed due to missing at least one emergency contact");
         }
         return progress;
     }
 
     private ProgressEvent<ResourceModel, CallbackContext> describeSubscription(
             final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
             final CallbackContext context,
             final Logger logger
     ) {
+        final ResourceModel model = request.getDesiredResourceState();
         try (ShieldClient shieldClient = proxyClient.client()) {
             logger.log("Starting to describe subscription.");
             return proxy.initiate("shield::describe-subscription-in-create-handler", proxyClient, model, context)
                     .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::describeSubscription))
-                    .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during describing subscription: " + e);
+                    .handleError((r, e, client, m, callbackContext) -> {
+                        logger.log("[Error] - Caught exception during describing subscription: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -88,11 +89,7 @@ public class CreateHandler extends BaseHandlerStd {
                     })
                     .done(res -> {
                         if (HandlerHelper.doesProactiveEngagementStatusExist(res)) {
-                            logger.log("Failed to describe subscription due to conflict account being proactive engagement enabled.");
-                            return ProgressEvent.failed(model,
-                                    context,
-                                    HandlerErrorCode.ResourceConflict,
-                                    HandlerHelper.PROACTIVE_ENGAGEMENT_CONFLICT_ERROR_MSG);
+                            return createProactiveEngagementResource(proxy, request, proxyClient, context, logger);
                         }
                         logger.log("Succeed describing subscription.");
                         return ProgressEvent.progress(model, context);
@@ -102,11 +99,12 @@ public class CreateHandler extends BaseHandlerStd {
 
     private ProgressEvent<ResourceModel, CallbackContext> associateProactiveEngagement(
             final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
             final CallbackContext context,
             final Logger logger
     ) {
+        final ResourceModel model = request.getDesiredResourceState();
         try (ShieldClient shieldClient = proxyClient.client()) {
             return proxy.initiate("shield::associate-proactive-engagement", proxyClient, model, context)
                     .translateToServiceRequest((m) -> AssociateProactiveEngagementDetailsRequest.builder()
@@ -115,9 +113,9 @@ public class CreateHandler extends BaseHandlerStd {
                     .makeServiceCall((associateProactiveEngagementRequest, client) -> proxy.injectCredentialsAndInvokeV2(
                             associateProactiveEngagementRequest,
                             shieldClient::associateProactiveEngagementDetails))
-                    .stabilize((request, response, client, m, callbackContext) -> checkCreateStabilization(client))
-                    .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during associating proactive engagement: " + e);
+                    .stabilize((r, response, client, m, callbackContext) -> checkCreateStabilization(client))
+                    .handleError((r, e, client, m, callbackContext) -> {
+                        logger.log("[Error] - Caught exception during associating proactive engagement: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -125,6 +123,27 @@ public class CreateHandler extends BaseHandlerStd {
                     })
                     .done((r) -> ProgressEvent.progress(model, context));
         }
+    }
+
+    private ProgressEvent<ResourceModel, CallbackContext> createProactiveEngagementResource(
+            final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
+            final ProxyClient<ShieldClient> proxyClient,
+            final CallbackContext context,
+            final Logger logger) {
+        final ResourceModel model = request.getDesiredResourceState();
+        return ProgressEvent.progress(model, context)
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        context,
+                        logger))
+                .then(progress -> HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, context, logger))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> {
+                    model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
+                    return ProgressEvent.defaultSuccessHandler(model);
+                });
     }
 
     private boolean checkCreateStabilization(final ProxyClient<ShieldClient> proxyClient) {
@@ -143,6 +162,7 @@ public class CreateHandler extends BaseHandlerStd {
         } catch (RuntimeException e) {
             return false;
         }
-        return HandlerHelper.isProactiveEngagementEnabled(describeEmergencyContactSettingsResponse, describeSubscriptionResponse);
+        return HandlerHelper.isProactiveEngagementEnabled(describeEmergencyContactSettingsResponse,
+                describeSubscriptionResponse);
     }
 }

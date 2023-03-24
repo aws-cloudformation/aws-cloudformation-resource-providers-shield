@@ -22,35 +22,41 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            final UpdateProtectionGroupRequest updateProtectionGroupRequest =
-                    UpdateProtectionGroupRequest.builder()
-                            .protectionGroupId(model.getProtectionGroupId())
-                            .aggregation(model.getAggregation())
-                            .members(model.getMembers())
-                            .pattern(model.getPattern())
-                            .resourceType(model.getResourceType())
-                            .build();
+            final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
+                UpdateProtectionGroupRequest.builder()
+                    .protectionGroupId(model.getProtectionGroupId())
+                    .aggregation(model.getAggregation())
+                    .members(model.getMembers())
+                    .pattern(model.getPattern())
+                    .resourceType(model.getResourceType());
 
-            proxy.injectCredentialsAndInvokeV2(updateProtectionGroupRequest, this.client::updateProtectionGroup);
+            if (model.getPattern().equals("ARBITRARY")) {
+                updateProtectionGroupRequestBuilder.members(model.getMembers());
+            } else if (model.getPattern().equals("BY_RESOURCE_TYPE")) {
+                updateProtectionGroupRequestBuilder.resourceType(model.getResourceType());
+            }
+
+            proxy.injectCredentialsAndInvokeV2(updateProtectionGroupRequestBuilder.build(),
+                this.client::updateProtectionGroup);
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+                .status(OperationStatus.SUCCESS)
+                .build();
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 }
