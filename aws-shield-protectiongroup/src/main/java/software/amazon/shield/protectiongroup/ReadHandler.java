@@ -72,6 +72,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                     .build();
 
         } catch (RuntimeException e) {
+            logger.log("[ERROR] ProtectionGroup ReadHandler: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))

@@ -69,8 +69,9 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 request.getAwsAccountId(),
                 protectionGroupId));
 
-            return new ReadHandler().handleRequest(proxy, request, callbackContext, logger);
+            return new ReadHandler(this.client).handleRequest(proxy, request, callbackContext, logger);
         } catch (RuntimeException e) {
+            logger.log("[ERROR] ProtectionGroup CreateHandler: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
                 .errorCode(ExceptionConverter.convertToErrorCode(e))
