@@ -151,7 +151,7 @@ public class CreateHandlerTest {
                         .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
                         .build())
                 .build();
-        doReturn(describeSubscriptionResponse).when(proxy)
+        doReturn(describeSubscriptionResponse).doReturn(describeSubscriptionResponse).when(proxy)
                 .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
         // Mock update emergency contact list
