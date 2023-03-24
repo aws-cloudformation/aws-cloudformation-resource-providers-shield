@@ -53,7 +53,7 @@ public class ReadHandlerTest {
                         .nextToken(ProtectionGroupTestData.NEXT_TOKEN)
                         .build();
 
-        final DescribeProtectionGroupResponse createProtectionGroupResponse =
+        final DescribeProtectionGroupResponse describeProtectionGroupResponse =
                 DescribeProtectionGroupResponse.builder()
                         .protectionGroup(
                                 ProtectionGroup.builder()
@@ -66,7 +66,7 @@ public class ReadHandlerTest {
                                         .build())
                         .build();
 
-        doReturn(createProtectionGroupResponse)
+        doReturn(describeProtectionGroupResponse)
                 .when(this.proxy).injectCredentialsAndInvokeV2(any(DescribeProtectionGroupRequest.class), any());
 
         registerListTags();

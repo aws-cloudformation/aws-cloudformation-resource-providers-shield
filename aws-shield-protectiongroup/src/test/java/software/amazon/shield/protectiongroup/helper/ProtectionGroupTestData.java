@@ -10,7 +10,7 @@ public class ProtectionGroupTestData {
     public static final String NEXT_TOKEN = "TEST_NEXT_TOKEN";
 
     public static final String PROTECTION_GROUP_ID = "test_protection_group_id";
-    public static final String PROTECTION_GROUP_ARN = "test_protection_group_arn";
+    public static final String PROTECTION_GROUP_ARN = "arn:aws:shield::111222:protection-group/test_protection_group_id";
 
     public static final String PATTERN = "test_pattern";
     public static final String AGGREGATION = "test_aggregation";
