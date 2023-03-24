@@ -36,14 +36,21 @@ public class DeleteHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> HandlerHelper.describeSubscription(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> HandlerHelper.describeSubscription(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
                         callbackContext,
                         logger))
-                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy, proxyClient, model, callbackContext, logger))
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> HandlerHelper.disableProactiveEngagement(proxy,
+                        proxyClient,
+                        model,
+                        callbackContext,
+                        logger))
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
                         model,

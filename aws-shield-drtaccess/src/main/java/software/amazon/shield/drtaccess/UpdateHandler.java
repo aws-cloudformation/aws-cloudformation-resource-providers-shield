@@ -39,7 +39,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
-            logger.log("Failed to handle update request due to account ID not found.");
+            logger.log("[Error] - Failed to handle update request due to account ID not found.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(HandlerErrorCode.NotFound)
@@ -51,7 +51,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             final DescribeDrtAccessResponse describeDrtAccessResponse =
                     HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
             if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
-                logger.log("Failed to handle update request due to account not having DRT role associated.");
+                logger.log("[Error] - Failed to handle update request due to account not having DRT role associated.");
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.NotFound)
