@@ -42,10 +42,11 @@
       "description": "The Amazon Resource Names (ARNs) of the health check to associate with the protection.",
       "type": "array",
       "insertionOrder": false,
+      "maxItems": 1,
       "items": {
         "type": "string",
         "minLength": 1,
-        "maxLength": 1
+        "maxLength": 2048
       }
     },
     "ApplicationLayerAutomaticResponseConfiguration": {
