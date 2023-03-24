@@ -61,7 +61,7 @@ public class CreateHandler extends BaseHandlerStd {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                     callbackContext,
                     HandlerErrorCode.InvalidRequest,
-                    "Missing at least one emergency contact");
+                    "[Error] - Input validation failed due to missing at least one emergency contact");
         }
         return progress;
     }
@@ -80,7 +80,7 @@ public class CreateHandler extends BaseHandlerStd {
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::describeSubscription))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during describing subscription: " + e);
+                        logger.log("[Error] - Caught exception during describing subscription: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -88,11 +88,7 @@ public class CreateHandler extends BaseHandlerStd {
                     })
                     .done(res -> {
                         if (HandlerHelper.doesProactiveEngagementStatusExist(res)) {
-                            logger.log("Failed to describe subscription due to conflict account being proactive engagement enabled.");
-                            return ProgressEvent.failed(model,
-                                    context,
-                                    HandlerErrorCode.ResourceConflict,
-                                    HandlerHelper.PROACTIVE_ENGAGEMENT_CONFLICT_ERROR_MSG);
+                            return createProactiveEngagementResource(proxy, proxyClient, model, context, logger);
                         }
                         logger.log("Succeed describing subscription.");
                         return ProgressEvent.progress(model, context);
@@ -117,7 +113,7 @@ public class CreateHandler extends BaseHandlerStd {
                             shieldClient::associateProactiveEngagementDetails))
                     .stabilize((request, response, client, m, callbackContext) -> checkCreateStabilization(client))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during associating proactive engagement: " + e);
+                        logger.log("[Error] - Caught exception during associating proactive engagement: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -125,6 +121,23 @@ public class CreateHandler extends BaseHandlerStd {
                     })
                     .done((r) -> ProgressEvent.progress(model, context));
         }
+    }
+
+    private ProgressEvent<ResourceModel, CallbackContext> createProactiveEngagementResource(
+            final AmazonWebServicesClientProxy proxy,
+            final ProxyClient<ShieldClient> proxyClient,
+            final ResourceModel model,
+            final CallbackContext context,
+            final Logger logger) {
+        return ProgressEvent.progress(model, context)
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
+                        proxyClient,
+                        model,
+                        context,
+                        logger))
+                .then(progress -> HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, context, logger))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
+                .then(progress -> ProgressEvent.defaultSuccessHandler(model));
     }
 
     private boolean checkCreateStabilization(final ProxyClient<ShieldClient> proxyClient) {
@@ -143,6 +156,7 @@ public class CreateHandler extends BaseHandlerStd {
         } catch (RuntimeException e) {
             return false;
         }
-        return HandlerHelper.isProactiveEngagementEnabled(describeEmergencyContactSettingsResponse, describeSubscriptionResponse);
+        return HandlerHelper.isProactiveEngagementEnabled(describeEmergencyContactSettingsResponse,
+                describeSubscriptionResponse);
     }
 }

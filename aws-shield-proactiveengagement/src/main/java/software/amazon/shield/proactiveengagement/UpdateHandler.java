@@ -48,6 +48,7 @@ public class UpdateHandler extends BaseHandlerStd {
                         callbackContext,
                         logger))
                 .then(progress -> updateProactiveEngagement(proxy, proxyClient, input, model, callbackContext, logger))
+                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> ProgressEvent.defaultSuccessHandler(input));
     }
 
@@ -69,7 +70,7 @@ public class UpdateHandler extends BaseHandlerStd {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                     callbackContext,
                     HandlerErrorCode.InvalidRequest,
-                    "Invalid update request input");
+                    "[Error] - Invalid update request input");
         }
         return progress;
     }
@@ -107,17 +108,16 @@ public class UpdateHandler extends BaseHandlerStd {
         return ProgressEvent.progress(model, context)
                 .then(progress -> {
                     String inputStatus = model.getProactiveEngagementStatus();
-                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString()))
+                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString())) {
                         return progress;
-                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger)
-                            .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+                    }
+                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger);
                 })
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
                         model,
                         context,
-                        logger))
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+                        logger));
     }
 
     /**
@@ -141,13 +141,12 @@ public class UpdateHandler extends BaseHandlerStd {
                         model,
                         context,
                         logger))
-                .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> {
                     String inputStatus = model.getProactiveEngagementStatus();
-                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString()))
+                    if (inputStatus.equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString())) {
                         return progress;
-                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger)
-                            .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate);
+                    }
+                    return updateProactiveEngagement(proxy, proxyClient, model, context, logger);
                 });
     }
 

@@ -31,8 +31,7 @@ import software.amazon.shield.proactiveengagement.ResourceModel;
 public class HandlerHelper {
 
     public static final String PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG = "Your account ID is not found.";
-    public static final String NO_PROACTIVE_ENGAGEMENT_ERROR_MSG = "Your account is not proactive engaged.";
-    public static final String PROACTIVE_ENGAGEMENT_CONFLICT_ERROR_MSG = "Your account is already proactive engaged.";
+    public static final String NO_PROACTIVE_ENGAGEMENT_ERROR_MSG = "Your account didn't enable proactive engagement.";
 
     public static boolean callerAccountIdMatchesResourcePrimaryId(ResourceHandlerRequest<ResourceModel> request) {
         return request.getAwsAccountId() != null && request.getDesiredResourceState()
@@ -67,7 +66,7 @@ public class HandlerHelper {
                     .makeServiceCall((request, client) -> proxy.injectCredentialsAndInvokeV2(request,
                             shieldClient::describeEmergencyContactSettings))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during describing emergency contact: " + e);
+                        logger.log("[Error] - Caught exception during describing emergency contact: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -100,7 +99,7 @@ public class HandlerHelper {
                     .makeServiceCall((request, client) -> proxy.injectCredentialsAndInvokeV2(request,
                             shieldClient::describeSubscription))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during describing subscription: " + e);
+                        logger.log("[Error] - Caught exception during describing subscription: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -109,8 +108,8 @@ public class HandlerHelper {
                     .done(res -> {
                         if (!HandlerHelper.doesProactiveEngagementStatusExist(res)) {
                             logger.log(
-                                    "Failed to describe subscription due to no account being proactive engagement " +
-                                            "enabled.");
+                                    "[Error] - Failed to describe subscription due to no account enabled proactive " +
+                                            "engagement.");
                             return ProgressEvent.failed(model,
                                     context,
                                     HandlerErrorCode.NotFound,
@@ -137,7 +136,7 @@ public class HandlerHelper {
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::disableProactiveEngagement))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during disabling proactive engagement: " + e);
+                        logger.log("[Error] - Caught exception during disabling proactive engagement: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -164,7 +163,7 @@ public class HandlerHelper {
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::enableProactiveEngagement))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during enabling proactive engagement: " + e);
+                        logger.log("[Error] - Caught exception during enabling proactive engagement: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -193,7 +192,7 @@ public class HandlerHelper {
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::updateEmergencyContactSettings))
                     .handleError((request, e, client, m, callbackContext) -> {
-                        logger.log("Caught exception during updating emergency contact settings: " + e);
+                        logger.log("[Error] - Caught exception during updating emergency contact settings: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),

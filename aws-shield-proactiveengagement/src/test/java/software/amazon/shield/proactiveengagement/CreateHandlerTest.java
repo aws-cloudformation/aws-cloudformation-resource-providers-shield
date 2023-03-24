@@ -14,11 +14,14 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
+import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementRequest;
+import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementResponse;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.CallChain;
-import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -151,6 +154,26 @@ public class CreateHandlerTest {
         doReturn(describeSubscriptionResponse).when(proxy)
                 .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
+        // Mock update emergency contact list
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+                UpdateEmergencyContactSettingsResponse.builder()
+                        .build();
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
+
+        // Mock enable proactive engagement
+        final EnableProactiveEngagementResponse enableProactiveEngagementResponse =
+                EnableProactiveEngagementResponse.builder()
+                        .build();
+        doReturn(enableProactiveEngagementResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(EnableProactiveEngagementRequest.class), any());
+
+        // Mock change propagation
+        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
+                ProgressEvent.progress(model, callbackContext);
+
+        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+
         model = ResourceModel.builder()
                 .accountId(ProactiveEngagementTestHelper.accountId)
                 .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
@@ -165,7 +188,11 @@ public class CreateHandlerTest {
                 = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
-        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.ResourceConflict);
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(ProactiveEngagementTestHelper.convertEmergencyContactList(
+                ProactiveEngagementTestHelper.emergencyContactList));
     }
 }
