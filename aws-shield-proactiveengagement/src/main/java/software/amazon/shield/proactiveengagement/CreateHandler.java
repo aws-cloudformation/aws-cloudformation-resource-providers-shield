@@ -42,8 +42,8 @@ public class CreateHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
-                .then(progress -> describeSubscription(proxy, proxyClient, model, callbackContext, logger))
-                .then(progress -> associateProactiveEngagement(proxy, proxyClient, model, callbackContext, logger))
+                .then(progress -> describeSubscription(proxy, request, proxyClient, callbackContext, logger))
+                .then(progress -> associateProactiveEngagement(proxy, request, proxyClient, callbackContext, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> {
                     model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
@@ -68,18 +68,19 @@ public class CreateHandler extends BaseHandlerStd {
 
     private ProgressEvent<ResourceModel, CallbackContext> describeSubscription(
             final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
             final CallbackContext context,
             final Logger logger
     ) {
+        final ResourceModel model = request.getDesiredResourceState();
         try (ShieldClient shieldClient = proxyClient.client()) {
             logger.log("Starting to describe subscription.");
             return proxy.initiate("shield::describe-subscription-in-create-handler", proxyClient, model, context)
                     .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
                     .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                             shieldClient::describeSubscription))
-                    .handleError((request, e, client, m, callbackContext) -> {
+                    .handleError((r, e, client, m, callbackContext) -> {
                         logger.log("[Error] - Caught exception during describing subscription: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
@@ -88,7 +89,7 @@ public class CreateHandler extends BaseHandlerStd {
                     })
                     .done(res -> {
                         if (HandlerHelper.doesProactiveEngagementStatusExist(res)) {
-                            return createProactiveEngagementResource(proxy, proxyClient, model, context, logger);
+                            return createProactiveEngagementResource(proxy, request, proxyClient, context, logger);
                         }
                         logger.log("Succeed describing subscription.");
                         return ProgressEvent.progress(model, context);
@@ -98,11 +99,12 @@ public class CreateHandler extends BaseHandlerStd {
 
     private ProgressEvent<ResourceModel, CallbackContext> associateProactiveEngagement(
             final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
             final CallbackContext context,
             final Logger logger
     ) {
+        final ResourceModel model = request.getDesiredResourceState();
         try (ShieldClient shieldClient = proxyClient.client()) {
             return proxy.initiate("shield::associate-proactive-engagement", proxyClient, model, context)
                     .translateToServiceRequest((m) -> AssociateProactiveEngagementDetailsRequest.builder()
@@ -111,8 +113,8 @@ public class CreateHandler extends BaseHandlerStd {
                     .makeServiceCall((associateProactiveEngagementRequest, client) -> proxy.injectCredentialsAndInvokeV2(
                             associateProactiveEngagementRequest,
                             shieldClient::associateProactiveEngagementDetails))
-                    .stabilize((request, response, client, m, callbackContext) -> checkCreateStabilization(client))
-                    .handleError((request, e, client, m, callbackContext) -> {
+                    .stabilize((r, response, client, m, callbackContext) -> checkCreateStabilization(client))
+                    .handleError((r, e, client, m, callbackContext) -> {
                         logger.log("[Error] - Caught exception during associating proactive engagement: " + e);
                         return ProgressEvent.failed(m,
                                 callbackContext,
@@ -125,10 +127,11 @@ public class CreateHandler extends BaseHandlerStd {
 
     private ProgressEvent<ResourceModel, CallbackContext> createProactiveEngagementResource(
             final AmazonWebServicesClientProxy proxy,
+            final ResourceHandlerRequest<ResourceModel> request,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
             final CallbackContext context,
             final Logger logger) {
+        final ResourceModel model = request.getDesiredResourceState();
         return ProgressEvent.progress(model, context)
                 .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
                         proxyClient,
@@ -137,7 +140,10 @@ public class CreateHandler extends BaseHandlerStd {
                         logger))
                 .then(progress -> HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, context, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
-                .then(progress -> ProgressEvent.defaultSuccessHandler(model));
+                .then(progress -> {
+                    model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
+                    return ProgressEvent.defaultSuccessHandler(model);
+                });
     }
 
     private boolean checkCreateStabilization(final ProxyClient<ShieldClient> proxyClient) {
