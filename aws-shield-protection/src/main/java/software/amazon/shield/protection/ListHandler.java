@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListProtectionsRequest;
 import software.amazon.awssdk.services.shield.model.ListProtectionsResponse;
+import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -30,59 +31,59 @@ public class ListHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         try {
             final ListProtectionsRequest listProtectionsRequest =
-                    ListProtectionsRequest.builder()
-                            .nextToken(request.getNextToken())
-                            .build();
+                ListProtectionsRequest.builder()
+                    .nextToken(request.getNextToken())
+                    .build();
 
             final ListProtectionsResponse listProtectionsResponse =
-                    proxy.injectCredentialsAndInvokeV2(listProtectionsRequest, this.client::listProtections);
+                proxy.injectCredentialsAndInvokeV2(listProtectionsRequest, this.client::listProtections);
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(translateResponse(listProtectionsResponse, proxy))
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+                .resourceModels(transformToModels(listProtectionsResponse.protections(), proxy))
+                .status(OperationStatus.SUCCESS)
+                .build();
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 
-    private List<ResourceModel> translateResponse(
-            final ListProtectionsResponse response,
-            final AmazonWebServicesClientProxy proxy) {
+    private List<ResourceModel> transformToModels(
+        final List<Protection> protections,
+        final AmazonWebServicesClientProxy proxy) {
 
-        return Optional.ofNullable(response.protections())
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
-                .map(
-                        protection ->
-                                ResourceModel.builder()
-                                        .protectionId(protection.id())
-                                        .name(protection.name())
-                                        .protectionArn(protection.protectionArn())
-                                        .resourceArn(protection.resourceArn())
-                                        .tags(
-                                                HandlerHelper.getTags(
-                                                        proxy,
-                                                        this.client,
-                                                        protection.resourceArn(),
-                                                        tag ->
-                                                                Tag.builder()
-                                                                        .key(tag.key())
-                                                                        .value(tag.value())
-                                                                        .build()))
-                                        .build())
-                .collect(Collectors.toList());
+        return Optional.ofNullable(protections)
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(
+                protection ->
+                    ResourceModel.builder()
+                        .protectionId(protection.id())
+                        .name(protection.name())
+                        .protectionArn(protection.protectionArn())
+                        .resourceArn(protection.resourceArn())
+                        .tags(
+                            HandlerHelper.getTags(
+                                proxy,
+                                this.client,
+                                protection.resourceArn(),
+                                tag ->
+                                    Tag.builder()
+                                        .key(tag.key())
+                                        .value(tag.value())
+                                        .build()))
+                        .build())
+            .collect(Collectors.toList());
     }
 }
