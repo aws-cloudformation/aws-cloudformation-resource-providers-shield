@@ -84,8 +84,8 @@ public class ListHandlerTest {
 
         final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
                 DescribeEmergencyContactSettingsResponse.builder()
-                .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
-                .build();
+                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                        .build();
         doReturn(describeEmergencyContactSettingsResponse).when(proxy)
                 .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
         final ResourceModel model = ResourceModel.builder()
@@ -104,8 +104,10 @@ public class ListHandlerTest {
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
-        assertThat(response.getResourceModels().get(0).getAccountId()).isEqualToIgnoringCase(
-                ProactiveEngagementTestHelper.accountId);
+        assertThat(response.getResourceModels().get(0).getProactiveEngagementStatus()).isEqualToIgnoringCase(
+                ProactiveEngagementStatus.ENABLED.toString());
+        assertThat(response.getResourceModels().get(0).getEmergencyContactList()).isEqualTo(
+                ProactiveEngagementTestHelper.convertEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList));
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
@@ -147,7 +149,7 @@ public class ListHandlerTest {
 
         final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
                 DescribeEmergencyContactSettingsResponse.builder()
-                .build();
+                        .build();
         doReturn(describeEmergencyContactSettingsResponse).when(proxy)
                 .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
 
@@ -163,6 +165,6 @@ public class ListHandlerTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
-        assertThat(response.getResourceModels().get(0).getAccountId()).isEqualTo(ProactiveEngagementTestHelper.accountId);
+        assertThat(response.getResourceModels().size()).isEqualTo(0);
     }
 }

@@ -3,6 +3,7 @@ package software.amazon.shield.proactiveengagement;
 import java.util.Collections;
 
 import software.amazon.awssdk.services.shield.ShieldClient;
+import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -33,9 +34,9 @@ public class DeleteHandler extends BaseHandlerStd {
             final ProxyClient<ShieldClient> proxyClient,
             final Logger logger) {
 
-        final ResourceModel input = request.getDesiredResourceState();
-        final ResourceModel model = HandlerHelper.copyNewModel(input);
-        model.setEmergencyContactList(Collections.emptyList());
+        logger.log("Starting to disable proactive engagement.");
+        final ResourceModel model = ResourceModel.builder().build();
+        model.setAccountId(request.getAwsAccountId());
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
@@ -49,18 +50,36 @@ public class DeleteHandler extends BaseHandlerStd {
                         model,
                         callbackContext,
                         logger))
+                .then(progress -> HandlerHelper.checkAccountDisabledProactiveEngagement(progress,
+                        callbackContext,
+                        request,
+                        model,
+                        logger))
                 .then(progress -> HandlerHelper.disableProactiveEngagement(proxy,
                         proxyClient,
                         model,
                         callbackContext,
-                        logger))
-                .then(progress -> HandlerHelper.updateEmergencyContactSettings(proxy,
-                        proxyClient,
-                        model,
-                        callbackContext,
-                        logger))
+                        logger)
+                )
+                .then(progress -> {
+                    model.setEmergencyContactList(Collections.emptyList());
+                    return HandlerHelper.updateEmergencyContactSettings(proxy,
+                            proxyClient,
+                            model,
+                            callbackContext,
+                            logger);
+                })
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
-                .then(progress -> ProgressEvent.defaultSuccessHandler(input));
+                .then(progress -> {
+                    logger.log("Succeed disabling proactive engagement.");
+                    return ProgressEvent.defaultSuccessHandler(
+                            ResourceModel.builder()
+                                    .accountId(request.getAwsAccountId())
+                                    .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
+                                    .emergencyContactList(Collections.emptyList())
+                                    .build()
+                    );
+                });
     }
 
     @Override

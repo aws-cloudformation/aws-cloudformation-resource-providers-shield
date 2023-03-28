@@ -1,7 +1,6 @@
 package software.amazon.shield.proactiveengagement.helper;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,12 +72,10 @@ public class HandlerHelper {
                                 e.getMessage());
                     })
                     .done((r) -> {
-                        final List<software.amazon.awssdk.services.shield.model.EmergencyContact> emergencyContactList =
-                                r.hasEmergencyContactList()
-                                        ? r.emergencyContactList()
-                                        : Collections.emptyList();
-                        model.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(
-                                emergencyContactList));
+                        if (r.hasEmergencyContactList()) {
+                            model.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(
+                                    r.emergencyContactList()));
+                        }
                         logger.log("Succeed describing emergency contact.");
                         return ProgressEvent.progress(model, context);
                     });
@@ -229,12 +226,22 @@ public class HandlerHelper {
                 .collect(Collectors.toList());
     }
 
-    public static ResourceModel copyNewModel(ResourceModel model) {
-        return ResourceModel.builder()
-                .accountId(model.getAccountId())
-                .proactiveEngagementStatus(model.getProactiveEngagementStatus())
-                .emergencyContactList(model.getEmergencyContactList())
-                .build();
-
+    public static ProgressEvent<ResourceModel, CallbackContext> checkAccountDisabledProactiveEngagement(
+            ProgressEvent<ResourceModel, CallbackContext> progress,
+            CallbackContext callbackContext,
+            ResourceHandlerRequest<ResourceModel> request,
+            ResourceModel model,
+            Logger logger
+    ) {
+        if (model.getProactiveEngagementStatus().equalsIgnoreCase(ProactiveEngagementStatus.DISABLED.toString())
+                && (model.getEmergencyContactList() == null || model.getEmergencyContactList().isEmpty())) {
+            logger.log(String.format("[Error] - %s", HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG));
+            return ProgressEvent.failed(
+                    ResourceModel.builder().accountId(request.getAwsAccountId()).build(),
+                    callbackContext,
+                    HandlerErrorCode.NotFound,
+                    HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
+        }
+        return progress;
     }
 }
