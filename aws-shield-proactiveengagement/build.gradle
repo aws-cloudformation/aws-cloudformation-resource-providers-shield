@@ -104,6 +104,7 @@ task rpdkPackage(type: Zip) {
     from("${rootDir}/${resource_name_with_dashes}") {
         include "settings.internal.json"
         include "canary-bundle/**/*"
+        include "contract-tests-artifacts/*"
     }
     from zipTree(cfnPackage.outputs.files.singleFile)
 }

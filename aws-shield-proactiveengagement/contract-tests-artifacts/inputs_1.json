@@ -1,0 +1,30 @@
+{
+   "CreateInputs": {
+      "ProactiveEngagementStatus": "ENABLED",
+      "EmergencyContactList": [
+         {
+            "EmailAddress": "contractEmail@amazon.com",
+            "ContactNotes": "contractTestNotes",
+            "PhoneNumber": "+10000000000"
+         }
+      ]
+   },
+   "PatchInputs": [
+      {
+         "op": "replace",
+         "path": "EmergencyContactList",
+         "value": [
+            {
+               "EmailAddress": "patch-contractEmail@amazon.com",
+               "ContactNotes": "patch-contractTestNotes",
+               "PhoneNumber": "+20000000000"
+            },
+            {
+               "EmailAddress": "patch-contractEmail2@amazon.com",
+               "ContactNotes": "patch-contractTestNotes2",
+               "PhoneNumber": "+220000000000"
+            }
+         ]
+      }
+   ]
+}

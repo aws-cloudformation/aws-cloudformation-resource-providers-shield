@@ -1,12 +1,11 @@
 {
-    "TPSCode": "...",
-    "Title": "...",
-    "CoverSheetIncluded": "...",
-    "DueDate": "...",
-    "ApprovalDate": "...",
-    "Memo": "...",
-    "SecondCopyOfMemo": "...",
-    "TestCode": "...",
-    "Authors": "...",
-    "Tags": "..."
+    "AccountId": "028742349852",
+    "ProactiveEngagementStatus": "ENABLED",
+    "EmergencyContactList": [
+        {
+            "EmailAddress": "contractEmail@amazon.com",
+            "ContactNotes": "contractTestNotes",
+            "PhoneNumber": "+10000000000"
+        }
+    ]
 }
