@@ -6,7 +6,6 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
-import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -38,15 +37,16 @@ public class CreateHandler extends BaseHandlerStd {
             final ProxyClient<ShieldClient> proxyClient,
             final Logger logger) {
 
+        logger.log("starting to handle create request");
         final ResourceModel model = request.getDesiredResourceState();
-
+        model.setAccountId(request.getAwsAccountId());
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
                 .then(progress -> describeSubscription(proxy, request, proxyClient, callbackContext, logger))
                 .then(progress -> associateProactiveEngagement(proxy, request, proxyClient, callbackContext, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
                 .then(progress -> {
-                    model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
+                    logger.log(String.format("Succeed handling create request: %s", model));
                     return ProgressEvent.defaultSuccessHandler(model);
                 });
     }
@@ -105,6 +105,7 @@ public class CreateHandler extends BaseHandlerStd {
             final Logger logger
     ) {
         final ResourceModel model = request.getDesiredResourceState();
+        logger.log("Starting to associate proactive engagement");
         try (ShieldClient shieldClient = proxyClient.client()) {
             return proxy.initiate("shield::associate-proactive-engagement", proxyClient, model, context)
                     .translateToServiceRequest((m) -> AssociateProactiveEngagementDetailsRequest.builder()
@@ -121,7 +122,10 @@ public class CreateHandler extends BaseHandlerStd {
                                 ExceptionConverter.convertToErrorCode((RuntimeException) e),
                                 e.getMessage());
                     })
-                    .done((r) -> ProgressEvent.progress(model, context));
+                    .done((r) -> {
+                        logger.log("Succeed associating proactive engagement");
+                        return ProgressEvent.progress(model, context);
+                    });
         }
     }
 
@@ -140,10 +144,7 @@ public class CreateHandler extends BaseHandlerStd {
                         logger))
                 .then(progress -> HandlerHelper.enableProactiveEngagement(proxy, proxyClient, model, context, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
-                .then(progress -> {
-                    model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
-                    return ProgressEvent.defaultSuccessHandler(model);
-                });
+                .then(progress -> ProgressEvent.defaultSuccessHandler(model));
     }
 
     private boolean checkCreateStabilization(final ProxyClient<ShieldClient> proxyClient) {

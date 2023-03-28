@@ -117,6 +117,7 @@ public class CreateHandlerTest {
 
         model = ResourceModel.builder()
                 .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
                 .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
                 .build();
 
@@ -176,6 +177,7 @@ public class CreateHandlerTest {
 
         model = ResourceModel.builder()
                 .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
                 .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
                 .build();
 

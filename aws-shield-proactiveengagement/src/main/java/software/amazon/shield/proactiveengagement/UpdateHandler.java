@@ -32,8 +32,10 @@ public class UpdateHandler extends BaseHandlerStd {
             final ProxyClient<ShieldClient> proxyClient,
             final Logger logger) {
 
+        logger.log("Starting to handle update request.");
         final ResourceModel input = request.getDesiredResourceState();
-        final ResourceModel model = HandlerHelper.copyNewModel(input);
+        final ResourceModel model = ResourceModel.builder().build();
+        model.setAccountId(request.getAwsAccountId());
 
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
@@ -49,7 +51,10 @@ public class UpdateHandler extends BaseHandlerStd {
                         logger))
                 .then(progress -> updateProactiveEngagement(proxy, proxyClient, input, model, callbackContext, logger))
                 .then(eventualConsistencyHandlerHelper::waitForChangesToPropagate)
-                .then(progress -> ProgressEvent.defaultSuccessHandler(input));
+                .then(progress -> {
+                    logger.log("Succeed handling update request.");
+                    return ProgressEvent.defaultSuccessHandler(input);
+                });
     }
 
     @Override
@@ -78,16 +83,16 @@ public class UpdateHandler extends BaseHandlerStd {
     private ProgressEvent<ResourceModel, CallbackContext> updateProactiveEngagement(
             final AmazonWebServicesClientProxy proxy,
             final ProxyClient<ShieldClient> proxyClient,
-            final ResourceModel model,
+            final ResourceModel input,
             final ResourceModel describeResult,
             final CallbackContext context,
             final Logger logger
     ) {
         if (describeResult.getProactiveEngagementStatus()
                 .equalsIgnoreCase(ProactiveEngagementStatus.ENABLED.toString())) {
-            return updateProactiveEngagementStatusFirst(proxy, proxyClient, model, context, logger);
+            return updateProactiveEngagementStatusFirst(proxy, proxyClient, input, context, logger);
         }
-        return updateEmergencyContactListFirst(proxy, proxyClient, model, context, logger);
+        return updateEmergencyContactListFirst(proxy, proxyClient, input, context, logger);
     }
 
     /**
