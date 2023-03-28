@@ -1,6 +1,9 @@
 package software.amazon.shield.proactiveengagement;
 
+import java.util.Collections;
+
 import software.amazon.awssdk.services.shield.ShieldClient;
+import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -30,21 +33,31 @@ public class ReadHandler extends BaseHandlerStd {
             final ProxyClient<ShieldClient> proxyClient,
             final Logger logger) {
 
-        final ResourceModel model = request.getDesiredResourceState();
+        logger.log("Starting to handle read request.");
+        final ResourceModel result = ResourceModel.builder().build();
+        result.setAccountId(request.getAwsAccountId());
 
-        return ProgressEvent.progress(model, callbackContext)
+        return ProgressEvent.progress(result, callbackContext)
                 .then(progress -> validateInput(progress, callbackContext, request))
                 .then(progress -> HandlerHelper.describeSubscription(proxy,
                         proxyClient,
-                        model,
+                        result,
                         callbackContext,
                         logger))
                 .then(progress -> HandlerHelper.describeEmergencyContactSettings(proxy,
                         proxyClient,
-                        model,
+                        result,
                         callbackContext,
                         logger))
-                .then(progress -> ProgressEvent.defaultSuccessHandler(model));
+                .then(progress -> HandlerHelper.checkAccountDisabledProactiveEngagement(progress,
+                        callbackContext,
+                        request,
+                        result,
+                        logger))
+                .then(progress -> {
+                    logger.log("Succeed handling read request.");
+                    return ProgressEvent.defaultSuccessHandler(result);
+                });
     }
 
     @Override
@@ -53,7 +66,11 @@ public class ReadHandler extends BaseHandlerStd {
             final CallbackContext callbackContext,
             ResourceHandlerRequest<ResourceModel> request) {
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
-            return ProgressEvent.failed(ResourceModel.builder().accountId(request.getAwsAccountId()).build(),
+            return ProgressEvent.failed(ResourceModel.builder()
+                            .accountId(request.getAwsAccountId())
+                            .emergencyContactList(Collections.emptyList())
+                            .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
+                            .build(),
                     callbackContext,
                     HandlerErrorCode.NotFound,
                     HandlerHelper.PROACTIVE_ENGAGEMENT_ACCOUNT_ID_NOT_FOUND_ERROR_MSG);
