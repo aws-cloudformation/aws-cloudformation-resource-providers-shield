@@ -24,5 +24,6 @@
         "codegen_template_path": "default",
         "protocolVersion": "2.0.0"
     },
+    "logProcessorEnabled": "true",
     "executableEntrypoint": "software.amazon.shield.subscription.HandlerWrapperExecutable"
 }
