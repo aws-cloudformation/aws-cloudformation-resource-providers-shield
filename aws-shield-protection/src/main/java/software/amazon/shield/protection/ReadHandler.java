@@ -39,7 +39,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final String protectionArn = model.getProtectionArn();
         logger.log(String.format("ReadHandler: protection arn = %s", protectionArn));
         final String protectionId = HandlerHelper.protectionArnToId(protectionArn);
-        logger.log(String.format("ReadHandler: protection id = %s", protectionArn));
+        logger.log(String.format("ReadHandler: protection id = %s", protectionId));
 
         try {
             final DescribeProtectionRequest describeProtectionRequest =
@@ -51,7 +51,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                     proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(translateResponse(describeProtectionResponse, proxy))
+                    .resourceModel(transformToModel(describeProtectionResponse.protection(), proxy))
                     .status(OperationStatus.SUCCESS)
                     .build();
 
@@ -64,11 +64,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         }
     }
 
-    private ResourceModel translateResponse(
-            final DescribeProtectionResponse response,
+    private ResourceModel transformToModel(
+            final Protection protection,
             final AmazonWebServicesClientProxy proxy) {
 
-        final Protection protection = response.protection();
         return ResourceModel.builder()
                 .protectionId(protection.id())
                 .name(protection.name())
@@ -78,7 +77,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                         HandlerHelper.getTags(
                                 proxy,
                                 this.client,
-                                protection.resourceArn(),
+                                protection.protectionArn(),
                                 tag ->
                                         Tag.builder()
                                                 .key(tag.key())
