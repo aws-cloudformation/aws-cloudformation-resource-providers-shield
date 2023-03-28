@@ -77,7 +77,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                             HandlerHelper.getTags(
                                 proxy,
                                 this.client,
-                                protection.resourceArn(),
+                                protection.protectionArn(),
                                 tag ->
                                     Tag.builder()
                                         .key(tag.key())
