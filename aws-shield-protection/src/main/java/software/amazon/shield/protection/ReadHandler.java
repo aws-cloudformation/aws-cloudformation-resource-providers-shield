@@ -1,8 +1,10 @@
 package software.amazon.shield.protection;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
@@ -10,8 +12,8 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
@@ -30,10 +32,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
         final String protectionArn = model.getProtectionArn();
@@ -43,68 +45,71 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
         try {
             final DescribeProtectionRequest describeProtectionRequest =
-                    DescribeProtectionRequest.builder()
-                            .protectionId(protectionId)
-                            .build();
+                DescribeProtectionRequest.builder()
+                    .protectionId(protectionId)
+                    .build();
 
             final DescribeProtectionResponse describeProtectionResponse =
-                    proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
+                proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
 
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(transformToModel(describeProtectionResponse.protection(), proxy))
-                    .status(OperationStatus.SUCCESS)
-                    .build();
-
+            return ProgressEvent.defaultSuccessHandler(
+                transformToModel(describeProtectionResponse.protection(), proxy)
+            );
         } catch (RuntimeException e) {
+            logger.log(String.format("ReadHandler: error %s", e));
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 
     private ResourceModel transformToModel(
-            final Protection protection,
-            final AmazonWebServicesClientProxy proxy) {
+        @NonNull final Protection protection,
+        @NonNull final AmazonWebServicesClientProxy proxy) {
+
+        final List<String> healthCheckArns = protection.healthCheckIds()
+            .stream()
+            .map(x -> HEALTH_CHECK_ARN_TEMPLATE + x)
+            .collect(Collectors.toList());
+        final List<Tag> tags = HandlerHelper.getTags(
+            proxy,
+            this.client,
+            protection.protectionArn(),
+            tag ->
+                Tag.builder()
+                    .key(tag.key())
+                    .value(tag.value())
+                    .build());
 
         return ResourceModel.builder()
-                .protectionId(protection.id())
-                .name(protection.name())
-                .protectionArn(protection.protectionArn())
-                .resourceArn(protection.resourceArn())
-                .tags(
-                        HandlerHelper.getTags(
-                                proxy,
-                                this.client,
-                                protection.protectionArn(),
-                                tag ->
-                                        Tag.builder()
-                                                .key(tag.key())
-                                                .value(tag.value())
-                                                .build()))
-                .healthCheckArns(
-                        protection.healthCheckIds()
-                                .stream()
-                                .map(x -> HEALTH_CHECK_ARN_TEMPLATE + x)
-                                .collect(Collectors.toList()))
-                .applicationLayerAutomaticResponseConfiguration(
-                        translateAppLayerAutoResponseConfig(protection))
-                .build();
+            .protectionId(protection.id())
+            .name(protection.name())
+            .protectionArn(protection.protectionArn())
+            .resourceArn(protection.resourceArn())
+            .tags(tags.size() > 0 ? tags : null)
+            .healthCheckArns(healthCheckArns.size() > 0 ? healthCheckArns : null)
+            .applicationLayerAutomaticResponseConfiguration(
+                translateAppLayerAutoResponseConfig(protection))
+            .build();
     }
 
-    private static ApplicationLayerAutomaticResponseConfiguration translateAppLayerAutoResponseConfig(Protection protection) {
-
-        String status = protection.applicationLayerAutomaticResponseConfiguration().statusAsString();
-        Action action =
-                protection.applicationLayerAutomaticResponseConfiguration().action().block() != null
-                        ? Action.builder().block(Maps.newHashMap()).build()
-                        : Action.builder().count(Maps.newHashMap()).build();
-
-
+    private static ApplicationLayerAutomaticResponseConfiguration translateAppLayerAutoResponseConfig(
+        @NonNull Protection protection
+    ) {
+        final software.amazon.awssdk.services.shield.model.ApplicationLayerAutomaticResponseConfiguration config =
+            protection.applicationLayerAutomaticResponseConfiguration();
+        if (config == null) {
+            return null;
+        }
         return ApplicationLayerAutomaticResponseConfiguration.builder()
-                .action(action)
-                .status(status)
-                .build();
+            .action(config.action().block() != null
+                ? Action.builder().block(Maps.newHashMap()).build()
+                : Action.builder().count(Maps.newHashMap()).build()
+            )
+            .status(config.statusAsString())
+            .build();
+
     }
 }
