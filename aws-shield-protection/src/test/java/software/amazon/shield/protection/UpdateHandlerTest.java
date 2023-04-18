@@ -57,17 +57,6 @@ public class UpdateHandlerTest {
 
     @Test
     public void updateAllFields() {
-        final ResourceHandlerRequest<ResourceModel> request =
-            ResourceHandlerRequest.<ResourceModel>builder()
-                .previousResourceState(ProtectionTestData.RESOURCE_MODEL_1.toBuilder()
-                    .healthCheckArns(null)
-                    .applicationLayerAutomaticResponseConfiguration(null)
-                    .tags(null)
-                    .build())
-                .desiredResourceState(ProtectionTestData.RESOURCE_MODEL_1)
-                .nextToken(ProtectionTestData.NEXT_TOKEN)
-                .build();
-
         when(this.proxy
             .injectCredentialsAndInvokeV2(any(), any()))
             .thenAnswer(i -> {
@@ -110,6 +99,16 @@ public class UpdateHandlerTest {
                 throw new AssertionError("unknown invocation: " + i.getArgument(0));
             });
 
+        final ResourceHandlerRequest<ResourceModel> request =
+            ResourceHandlerRequest.<ResourceModel>builder()
+                .previousResourceState(ProtectionTestData.RESOURCE_MODEL_1.toBuilder()
+                    .healthCheckArns(null)
+                    .applicationLayerAutomaticResponseConfiguration(null)
+                    .tags(null)
+                    .build())
+                .desiredResourceState(ProtectionTestData.RESOURCE_MODEL_1)
+                .nextToken(ProtectionTestData.NEXT_TOKEN)
+                .build();
         final ProgressEvent<ResourceModel, CallbackContext> response
             = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
 
@@ -125,18 +124,6 @@ public class UpdateHandlerTest {
 
     @Test
     public void minimalUpdates() {
-        final ResourceHandlerRequest<ResourceModel> request =
-            ResourceHandlerRequest.<ResourceModel>builder()
-                .previousResourceState(ResourceModel.builder()
-                    .protectionArn(ProtectionTestData.PROTECTION_ARN)
-                    .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
-                    .build())
-                .desiredResourceState(ResourceModel.builder()
-                    .protectionArn(ProtectionTestData.PROTECTION_ARN)
-                    .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
-                    .build())
-                .nextToken(ProtectionTestData.NEXT_TOKEN)
-                .build();
 
         final DescribeProtectionResponse describeProtectionResponse =
             DescribeProtectionResponse.builder()
@@ -165,6 +152,19 @@ public class UpdateHandlerTest {
                 }
                 throw new AssertionError("unknown invocation: " + i.getArgument(0));
             });
+
+        final ResourceHandlerRequest<ResourceModel> request =
+            ResourceHandlerRequest.<ResourceModel>builder()
+                .previousResourceState(ResourceModel.builder()
+                    .protectionArn(ProtectionTestData.PROTECTION_ARN)
+                    .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
+                    .build())
+                .desiredResourceState(ResourceModel.builder()
+                    .protectionArn(ProtectionTestData.PROTECTION_ARN)
+                    .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
+                    .build())
+                .nextToken(ProtectionTestData.NEXT_TOKEN)
+                .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
             = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);

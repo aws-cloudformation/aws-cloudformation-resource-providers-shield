@@ -70,10 +70,15 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 proxy
             );
 
-            updateTags(
+            HandlerHelper.updateTags(
                 desiredState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
                 currentState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
                 protectionArn,
+                this.client,
                 proxy
             );
 
@@ -86,49 +91,6 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .errorCode(ExceptionConverter.convertToErrorCode(e))
                 .message(e.getMessage())
                 .build();
-        }
-    }
-
-    private void updateTags(
-        @Nullable final List<Tag> desiredTags,
-        @Nullable final List<Tag> currentTags,
-        @NonNull final String protectionArn,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        final Map<String, String> currentTagsMap = Optional.ofNullable(currentTags)
-            .orElse(Collections.emptyList())
-            .stream()
-            .collect(Collectors.toMap(
-                Tag::getKey,
-                Tag::getValue
-            ));
-
-        final List<software.amazon.awssdk.services.shield.model.Tag> tagsToSet = new ArrayList<>();
-
-        Optional.ofNullable(desiredTags).orElse(Collections.emptyList()).forEach(tag -> {
-            if (!(tag.getValue().equals(currentTagsMap.get(tag.getKey())))) {
-                tagsToSet.add(software.amazon.awssdk.services.shield.model.Tag.builder()
-                    .key(tag.getKey())
-                    .value(tag.getValue())
-                    .build());
-            }
-            currentTagsMap.remove(tag.getKey());
-        });
-
-        final List<String> tagsToRemove = new ArrayList<>(currentTagsMap.keySet());
-
-        if (tagsToSet.size() > 0) {
-            proxy.injectCredentialsAndInvokeV2(TagResourceRequest.builder()
-                .tags(tagsToSet)
-                .resourceARN(protectionArn)
-                .build(), this.client::tagResource);
-        }
-
-        if (tagsToRemove.size() > 0) {
-            proxy.injectCredentialsAndInvokeV2(UntagResourceRequest.builder()
-                .tagKeys(tagsToRemove)
-                .resourceARN(protectionArn)
-                .build(), this.client::untagResource);
         }
     }
 

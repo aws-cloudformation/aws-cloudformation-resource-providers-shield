@@ -1,9 +1,11 @@
 package software.amazon.shield.protectiongroup;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListProtectionGroupsRequest;
 import software.amazon.awssdk.services.shield.model.ListProtectionGroupsResponse;
+import software.amazon.awssdk.services.shield.model.ProtectionGroup;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -31,62 +33,62 @@ public class ListHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         final List<ResourceModel> models = new ArrayList<>();
 
         try {
             final ListProtectionGroupsRequest listProtectionGroupsRequest =
-                    ListProtectionGroupsRequest.builder()
-                            .nextToken(request.getNextToken())
-                            .build();
+                ListProtectionGroupsRequest.builder()
+                    .nextToken(request.getNextToken())
+                    .build();
 
             final ListProtectionGroupsResponse listProtectionGroupsResponse =
-                    proxy.injectCredentialsAndInvokeV2(listProtectionGroupsRequest, this.client::listProtectionGroups);
+                proxy.injectCredentialsAndInvokeV2(listProtectionGroupsRequest, this.client::listProtectionGroups);
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(translateResponse(listProtectionGroupsResponse, proxy))
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+                .resourceModels(transferToModels(listProtectionGroupsResponse.protectionGroups(), proxy))
+                .status(OperationStatus.SUCCESS)
+                .build();
 
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 
-    private List<ResourceModel> translateResponse(
-            final ListProtectionGroupsResponse response,
-            final AmazonWebServicesClientProxy proxy) {
-        return Optional.ofNullable(response.protectionGroups())
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
-                .map(
-                        protectionGroup ->
-                                ResourceModel.builder()
-                                        .protectionGroupId(protectionGroup.protectionGroupId())
-                                        .aggregation(protectionGroup.aggregationAsString())
-                                        .members(protectionGroup.members())
-                                        .pattern(protectionGroup.patternAsString())
-                                        .protectionGroupArn(protectionGroup.protectionGroupArn())
-                                        .resourceType(protectionGroup.resourceTypeAsString())
-                                        .tags(
-                                                HandlerHelper.getTags(
-                                                        proxy,
-                                                        this.client,
-                                                        protectionGroup.protectionGroupArn(),
-                                                        tag ->
-                                                                Tag.builder()
-                                                                        .key(tag.key())
-                                                                        .value(tag.value())
-                                                                        .build()))
-                                        .build())
-                .collect(Collectors.toList());
+    private List<ResourceModel> transferToModels(
+        final List<ProtectionGroup> protectionGroups,
+        final AmazonWebServicesClientProxy proxy) {
+        return Optional.ofNullable(protectionGroups)
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(
+                protectionGroup ->
+                    ResourceModel.builder()
+                        .protectionGroupId(protectionGroup.protectionGroupId())
+                        .aggregation(protectionGroup.aggregationAsString())
+                        .members(protectionGroup.members())
+                        .pattern(protectionGroup.patternAsString())
+                        .protectionGroupArn(protectionGroup.protectionGroupArn())
+                        .resourceType(protectionGroup.resourceTypeAsString())
+                        .tags(
+                            HandlerHelper.getTags(
+                                proxy,
+                                this.client,
+                                protectionGroup.protectionGroupArn(),
+                                tag ->
+                                    Tag.builder()
+                                        .key(tag.key())
+                                        .value(tag.value())
+                                        .build()))
+                        .build())
+            .collect(Collectors.toList());
     }
 }
