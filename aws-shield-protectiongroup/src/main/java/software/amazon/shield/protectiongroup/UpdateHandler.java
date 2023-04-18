@@ -10,6 +10,7 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.HandlerHelper;
 
 @RequiredArgsConstructor
 public class UpdateHandler extends BaseHandler<CallbackContext> {
@@ -27,31 +28,46 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final CallbackContext callbackContext,
         final Logger logger) {
 
-        final ResourceModel model = request.getDesiredResourceState();
+        final ResourceModel currentState = request.getPreviousResourceState();
+        final ResourceModel desiredState = request.getDesiredResourceState();
+        final String protectionGroupArn = desiredState.getProtectionGroupArn();
+        logger.log(String.format("UpdateHandler: protectionGroup arn = %s", protectionGroupArn));
+        final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
+        logger.log(String.format("UpdateHandler: protectionGroup id = %s", protectionGroupId));
 
         try {
             final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
                 UpdateProtectionGroupRequest.builder()
-                    .protectionGroupId(model.getProtectionGroupId())
-                    .aggregation(model.getAggregation())
-                    .members(model.getMembers())
-                    .pattern(model.getPattern())
-                    .resourceType(model.getResourceType());
+                    .protectionGroupId(protectionGroupId)
+                    .aggregation(desiredState.getAggregation())
+                    .members(desiredState.getMembers())
+                    .pattern(desiredState.getPattern())
+                    .resourceType(desiredState.getResourceType());
 
-            if (model.getPattern().equals("ARBITRARY")) {
-                updateProtectionGroupRequestBuilder.members(model.getMembers());
-            } else if (model.getPattern().equals("BY_RESOURCE_TYPE")) {
-                updateProtectionGroupRequestBuilder.resourceType(model.getResourceType());
+            if (desiredState.getPattern().equals("ARBITRARY")) {
+                updateProtectionGroupRequestBuilder.members(desiredState.getMembers());
+            } else if (desiredState.getPattern().equals("BY_RESOURCE_TYPE")) {
+                updateProtectionGroupRequestBuilder.resourceType(desiredState.getResourceType());
             }
 
             proxy.injectCredentialsAndInvokeV2(updateProtectionGroupRequestBuilder.build(),
                 this.client::updateProtectionGroup);
 
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.SUCCESS)
-                .build();
+            HandlerHelper.updateTags(
+                desiredState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
+                currentState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
+                protectionGroupArn,
+                this.client,
+                proxy
+            );
 
+            return new ReadHandler(this.client).handleRequest(proxy, request, callbackContext, logger);
         } catch (RuntimeException e) {
+            logger.log("[ERROR] ProtectionGroup UpdateHandler: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
                 .errorCode(ExceptionConverter.convertToErrorCode(e))
@@ -59,4 +75,5 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .build();
         }
     }
+
 }
