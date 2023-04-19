@@ -24,40 +24,49 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
             DescribeDrtAccessResponse describeDrtAccessResponse = HandlerHelper.getDrtAccessDescribeResponse(proxy,
-                    client,
-                    logger);
-            if (!HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+                client,
+                logger);
+            if (HandlerHelper.isDrtAccessConfigured(
+                describeDrtAccessResponse.roleArn(),
+                describeDrtAccessResponse.logBucketList()
+            )) {
                 logger.log(
-                        "[Error] - Failed to handle create request due to account ID has been associated with DRT " +
-                                "role and DRT log bucket list.");
+                    "[Error] - Failed to handle create request due to account ID has been associated with DRT " +
+                        "role or DRT log bucket list.");
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                        .status(OperationStatus.FAILED)
-                        .errorCode(HandlerErrorCode.ResourceConflict)
-                        .message(HandlerHelper.DRTACCESS_CONFLICT_ERROR_MSG)
-                        .build();
+                    .status(OperationStatus.FAILED)
+                    .errorCode(HandlerErrorCode.ResourceConflict)
+                    .message(HandlerHelper.DRTACCESS_CONFLICT_ERROR_MSG)
+                    .build();
+            }
+            if (HandlerHelper.isEmptyDrtAccessRequest(model.getRoleArn(), model.getLogBucketList())) {
+                return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                    .status(OperationStatus.FAILED)
+                    .errorCode(HandlerErrorCode.InvalidRequest)
+                    .message(HandlerHelper.EMPTY_DRTACCESS_REQUEST)
+                    .build();
             }
             HandlerHelper.associateDrtRole(proxy, client, model.getRoleArn(), logger);
             HandlerHelper.associateDrtLogBucketList(proxy, client, model.getLogBucketList(), logger);
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(model)
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+
+            model.setAccountId(request.getAwsAccountId());
+            return new ReadHandler(this.client).handleRequest(proxy, request, callbackContext, logger);
         } catch (RuntimeException e) {
             logger.log("[Error] - Caught exception during associating DRT role and DRT log bucket list: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 }

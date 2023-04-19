@@ -9,23 +9,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessRequest;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.drtaccess.helper.DrtAccessTestHelper;
+import software.amazon.shield.drtaccess.helper.DrtAccessTestBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 
 @ExtendWith(MockitoExtension.class)
-public class UpdateHandlerTest {
+public class UpdateHandlerTest extends DrtAccessTestBase {
 
     @Mock
     private AmazonWebServicesClientProxy proxy;
@@ -33,7 +30,7 @@ public class UpdateHandlerTest {
     @Mock
     private Logger logger;
 
-    private ResourceModel resourceModel;
+    private ResourceModel prevStateResourceModel;
 
     private UpdateHandler updateHandler;
 
@@ -44,36 +41,29 @@ public class UpdateHandlerTest {
     @BeforeEach
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
-        logger = mock(Logger.class);
-        resourceModel = DrtAccessTestHelper.getTestResourceModel();
+        logger = mock(Logger.class, withSettings().verboseLogging());
+        prevStateResourceModel = getTestResourceModel();
         updateHandler = new UpdateHandler(mock(ShieldClient.class));
     }
 
     @Test
     public void handleRequest_UpdateBoth() {
-        final DescribeDrtAccessResponse describeDrtAccessResponse = DescribeDrtAccessResponse.builder()
-                .roleArn(resourceModel.getRoleArn())
-                .logBucketList(resourceModel.getLogBucketList())
-                .build();
-        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
-
-        final ResourceModel model = ResourceModel.builder()
-                .accountId(DrtAccessTestHelper.accountId)
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+            .awsAccountId(accountId)
+            .previousResourceState(prevStateResourceModel)
+            .desiredResourceState(ResourceModel.builder()
+                .accountId(accountId)
                 .roleArn(roleArn)
                 .logBucketList(logBucketList)
-                .build();
+                .build())
+            .build();
 
-        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(model)
-                .build();
-
-        DrtAccessTestHelper.mockDisassociateDrtLogBucket(proxy);
-        DrtAccessTestHelper.mockAssociateDrtRole(proxy);
-        DrtAccessTestHelper.mockAssociateDrtLogBucket(proxy);
+        mockDisassociateDrtLogBucket(proxy);
+        mockAssociateDrtRole(proxy);
+        mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -90,27 +80,20 @@ public class UpdateHandlerTest {
 
     @Test
     public void handleRequest_OnlyUpdateDrtRole() {
-        final DescribeDrtAccessResponse describeDrtAccessResponse = DescribeDrtAccessResponse.builder()
-                .roleArn(resourceModel.getRoleArn())
-                .logBucketList(resourceModel.getLogBucketList())
-                .build();
-        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
-
-        final ResourceModel model = ResourceModel.builder()
-                .accountId(DrtAccessTestHelper.accountId)
-                .roleArn(roleArn)
-                .logBucketList(resourceModel.getLogBucketList())
-                .build();
-
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(model)
-                .build();
+            .awsAccountId(accountId)
+            .previousResourceState(prevStateResourceModel)
+            .desiredResourceState(ResourceModel.builder()
+                .accountId(accountId)
+                .roleArn(roleArn)
+                .logBucketList(prevStateResourceModel.getLogBucketList())
+                .build())
+            .build();
 
-        DrtAccessTestHelper.mockAssociateDrtRole(proxy);
+        mockAssociateDrtRole(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -123,27 +106,21 @@ public class UpdateHandlerTest {
 
     @Test
     public void handleRequest_OnlyUpdateDrtLogBucket() {
-        final DescribeDrtAccessResponse describeDrtAccessResponse = DescribeDrtAccessResponse.builder()
-                .roleArn(resourceModel.getRoleArn())
-                .logBucketList(resourceModel.getLogBucketList())
-                .build();
-        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
-
-        final ResourceModel model = ResourceModel.builder()
-                .accountId(DrtAccessTestHelper.accountId)
-                .logBucketList(logBucketList)
-                .build();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(model)
-                .build();
+            .awsAccountId(accountId)
+            .previousResourceState(prevStateResourceModel)
+            .desiredResourceState(ResourceModel.builder()
+                .accountId(accountId)
+                .logBucketList(logBucketList)
+                .build())
+            .build();
 
-        DrtAccessTestHelper.mockDisassociateDrtLogBucket(proxy);
-        DrtAccessTestHelper.mockAssociateDrtLogBucket(proxy);
+        mockDisassociateDrtLogBucket(proxy);
+        mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -158,38 +135,35 @@ public class UpdateHandlerTest {
     }
 
     @Test
-    public void handleRequest_NoDrtAccessFailure() {
-        final DescribeDrtAccessResponse describeDrtAccessResponse = DescribeDrtAccessResponse.builder()
-                .build();
-
-        doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
-
+    public void handleRequest_EmptyUpdateRequestShouldFail() {
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(ResourceModel.builder().accountId(DrtAccessTestHelper.accountId).build())
-                .nextToken("randomNextToken")
-                .build();
+            .awsAccountId(accountId)
+            .previousResourceState(prevStateResourceModel)
+            .desiredResourceState(ResourceModel.builder().accountId(accountId).build())
+            .nextToken("randomNextToken")
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                updateHandler.handleRequest(proxy, request, null, logger);
+            updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
-        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.InvalidRequest);
     }
 
     @Test
     public void handleRequest_AccountNotFoundFailure() {
-        final ResourceModel model = ResourceModel.builder()
-                .accountId(DrtAccessTestHelper.accountId)
-                .build();
-
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
+            .previousResourceState(prevStateResourceModel)
+            .desiredResourceState(
+                ResourceModel.builder()
+                    .accountId(accountId)
+                    .build()
+            )
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                updateHandler.handleRequest(proxy, request, null, logger);
+            updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
