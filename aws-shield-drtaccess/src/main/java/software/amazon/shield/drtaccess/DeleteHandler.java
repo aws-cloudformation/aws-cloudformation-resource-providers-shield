@@ -44,7 +44,10 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             final DescribeDrtAccessResponse describeDrtAccessResponse =
                     HandlerHelper.getDrtAccessDescribeResponse(proxy,
                             client, logger);
-            if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+            if (!HandlerHelper.isDrtAccessConfigured(
+                describeDrtAccessResponse.roleArn(),
+                describeDrtAccessResponse.logBucketList()
+            )) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.NotFound)

@@ -14,7 +14,7 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.drtaccess.helper.DrtAccessTestHelper;
+import software.amazon.shield.drtaccess.helper.DrtAccessTestBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-public class DeleteHandlerTest {
+public class DeleteHandlerTest extends DrtAccessTestBase {
 
     @Mock
     private AmazonWebServicesClientProxy proxy;
@@ -37,7 +37,7 @@ public class DeleteHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        resourceModel = DrtAccessTestHelper.getTestResourceModel();
+        resourceModel = getTestResourceModel();
         deleteHandler = new DeleteHandler(mock(ShieldClient.class));
     }
 
@@ -51,8 +51,8 @@ public class DeleteHandlerTest {
         doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(ResourceModel.builder().accountId(DrtAccessTestHelper.accountId).build())
+                .awsAccountId(accountId)
+                .desiredResourceState(ResourceModel.builder().accountId(accountId).build())
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -74,8 +74,8 @@ public class DeleteHandlerTest {
         doReturn(describeDrtAccessResponse).when(proxy).injectCredentialsAndInvokeV2(any(DescribeDrtAccessRequest.class), any());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(DrtAccessTestHelper.accountId)
-                .desiredResourceState(ResourceModel.builder().accountId(DrtAccessTestHelper.accountId).build())
+                .awsAccountId(accountId)
+                .desiredResourceState(ResourceModel.builder().accountId(accountId).build())
                 .nextToken("randomNextToken")
                 .build();
 
@@ -90,7 +90,7 @@ public class DeleteHandlerTest {
     @Test
     public void handleRequest_AccountNotFoundFailure() {
         final ResourceModel model = ResourceModel.builder()
-                .accountId(DrtAccessTestHelper.accountId)
+                .accountId(accountId)
                 .build();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
