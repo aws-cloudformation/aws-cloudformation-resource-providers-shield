@@ -25,7 +25,7 @@
       "description": "A list of email addresses and phone numbers that the Shield Response Team (SRT) can use to contact you for escalations to the SRT and to initiate proactive customer support.\nTo enable proactive engagement, the contact list must include at least one phone number.",
       "type": "array",
       "insertionOrder": false,
-      "minItems": 0,
+      "minItems": 1,
       "maxItems": 10,
       "items": {
         "$ref": "#/definitions/EmergencyContact"

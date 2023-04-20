@@ -13,46 +13,35 @@ import software.amazon.shield.proactiveengagement.ResourceModel;
 
 public abstract class BaseHandlerStd extends BaseHandler<CallbackContext> {
 
-    public final EventualConsistencyHandlerHelper<ResourceModel, CallbackContext> eventualConsistencyHandlerHelper;
     public final ShieldClient shieldClient;
 
     public BaseHandlerStd() {
-        this.eventualConsistencyHandlerHelper = new EventualConsistencyHandlerHelper<>();
         this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
-    public BaseHandlerStd(
-            final ShieldClient shieldClient,
-            final EventualConsistencyHandlerHelper<ResourceModel, CallbackContext> eventualConsistencyHandlerHelper) {
+    public BaseHandlerStd(final ShieldClient shieldClient) {
         this.shieldClient = shieldClient;
-        this.eventualConsistencyHandlerHelper = eventualConsistencyHandlerHelper;
     }
 
     @Override
     public final ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
         return handleRequest(
-                proxy,
-                request,
-                callbackContext != null ? callbackContext : new CallbackContext(),
-                proxy.newProxy(ClientBuilder::getClient),
-                logger
+            proxy,
+            request,
+            callbackContext != null ? callbackContext : new CallbackContext(),
+            proxy.newProxy(ClientBuilder::getClient),
+            logger
         );
     }
 
     protected abstract ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final ProxyClient<ShieldClient> proxyClient,
-            final Logger logger);
-
-    protected abstract ProgressEvent<ResourceModel, CallbackContext> validateInput(
-            final ProgressEvent<ResourceModel, CallbackContext> progress,
-            final CallbackContext callbackContext,
-            final ResourceHandlerRequest<ResourceModel> request
-    );
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final ProxyClient<ShieldClient> proxyClient,
+        final Logger logger);
 }

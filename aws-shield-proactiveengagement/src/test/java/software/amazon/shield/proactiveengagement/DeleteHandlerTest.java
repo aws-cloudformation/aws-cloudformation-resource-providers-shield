@@ -26,7 +26,6 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +46,6 @@ public class DeleteHandlerTest {
     @Mock
     private ShieldClient shieldClient;
 
-    @Mock
-    private EventualConsistencyHandlerHelper<ResourceModel, CallbackContext>
-            eventualConsistencyHandlerHelper;
-
     private DeleteHandler deleteHandler;
 
     private ProxyClient<ShieldClient> proxyClient;
@@ -65,7 +60,7 @@ public class DeleteHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        deleteHandler = new DeleteHandler(shieldClient, eventualConsistencyHandlerHelper);
+        deleteHandler = new DeleteHandler(shieldClient);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder()
@@ -108,8 +103,6 @@ public class DeleteHandlerTest {
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
                 ProgressEvent.progress(model, callbackContext);
-
-        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
                 .awsAccountId(ProactiveEngagementTestHelper.accountId)
