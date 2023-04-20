@@ -14,21 +14,17 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
-import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementRequest;
-import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementResponse;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
-import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
-import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.CallChain;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
@@ -50,10 +46,6 @@ public class CreateHandlerTest {
     @Mock
     private ShieldClient shieldClient;
 
-    @Mock
-    private EventualConsistencyHandlerHelper<ResourceModel, CallbackContext>
-            eventualConsistencyHandlerHelper;
-
     private CreateHandler createHandler;
 
     private ProxyClient<ShieldClient> proxyClient;
@@ -68,133 +60,112 @@ public class CreateHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        createHandler = new CreateHandler(shieldClient, eventualConsistencyHandlerHelper);
+        createHandler = new CreateHandler(shieldClient);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
         init = new AmazonWebServicesClientProxy(new LoggerProxy(),
-                MOCK_CREDENTIALS,
-                () -> Duration.ofSeconds(600).toMillis()).initiate("test", proxyClient, model, callbackContext);
+            MOCK_CREDENTIALS,
+            () -> Duration.ofSeconds(600).toMillis()).initiate("test", proxyClient, model, callbackContext);
     }
 
     @Test
     public void handleRequest_SimpleSuccess() {
-
         doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         // Mock describe subscription
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
-                .build();
+            .subscription(Subscription.builder().build())
+            .build();
         final DescribeSubscriptionResponse describeSubscriptionResponse2 = DescribeSubscriptionResponse.builder()
-                .subscription(Subscription.builder()
-                        .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
-                        .build())
-                .build();
+            .subscription(Subscription.builder()
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
+                .build())
+            .build();
         doReturn(describeSubscriptionResponse).doReturn(describeSubscriptionResponse2)
-                .when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+            .when(proxy)
+            .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
         // Mock describe emergency contact list
         final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
-                DescribeEmergencyContactSettingsResponse.builder()
-                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
-                        .build();
+            DescribeEmergencyContactSettingsResponse.builder()
+                .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                .build();
         doReturn(describeEmergencyContactSettingsResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+            .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
 
         // Mock associate proactive engagement with account
         final AssociateProactiveEngagementDetailsResponse associateProactiveEngagementDetailsResponse =
-                AssociateProactiveEngagementDetailsResponse.builder()
-                        .build();
+            AssociateProactiveEngagementDetailsResponse.builder()
+                .build();
 
         doReturn(associateProactiveEngagementDetailsResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(AssociateProactiveEngagementDetailsRequest.class), any());
+            .injectCredentialsAndInvokeV2(any(AssociateProactiveEngagementDetailsRequest.class), any());
 
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
-                ProgressEvent.progress(model, callbackContext);
-
-        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+            ProgressEvent.progress(model, callbackContext);
 
         model = ResourceModel.builder()
-                .accountId(ProactiveEngagementTestHelper.accountId)
-                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
-                .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
-                .build();
+            .accountId(ProactiveEngagementTestHelper.accountId)
+            .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+            .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
+            .build();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(ProactiveEngagementTestHelper.accountId)
-                .desiredResourceState(model)
-                .build();
+            .awsAccountId(ProactiveEngagementTestHelper.accountId)
+            .desiredResourceState(model)
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()
-                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+            .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
         assertThat(response.getResourceModel()
-                .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
-                ProactiveEngagementTestHelper.emergencyContactList));
+            .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
+            ProactiveEngagementTestHelper.emergencyContactList));
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
 
     @Test
     public void handleRequest_AccountConflict() {
-
-        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         // Mock describe subscription
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
-                .subscription(Subscription.builder()
-                        .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
-                        .build())
-                .build();
+            .subscription(Subscription.builder()
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
+                .build())
+            .build();
         doReturn(describeSubscriptionResponse).doReturn(describeSubscriptionResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
-
-        // Mock update emergency contact list
-        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
-                UpdateEmergencyContactSettingsResponse.builder()
-                        .build();
-        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
-
-        // Mock enable proactive engagement
-        final EnableProactiveEngagementResponse enableProactiveEngagementResponse =
-                EnableProactiveEngagementResponse.builder()
-                        .build();
-        doReturn(enableProactiveEngagementResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(EnableProactiveEngagementRequest.class), any());
-
-        // Mock change propagation
-        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
-                ProgressEvent.progress(model, callbackContext);
-
-        doReturn(inProgressEvent).when(eventualConsistencyHandlerHelper).waitForChangesToPropagate(any());
+            .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+        final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
+            DescribeEmergencyContactSettingsResponse.builder()
+                .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                .build();
+        doReturn(describeEmergencyContactSettingsResponse).when(proxy)
+            .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
 
         model = ResourceModel.builder()
-                .accountId(ProactiveEngagementTestHelper.accountId)
-                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
-                .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
-                .build();
+            .accountId(ProactiveEngagementTestHelper.accountId)
+            .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+            .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
+            .build();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(ProactiveEngagementTestHelper.accountId)
-                .desiredResourceState(model)
-                .build();
+            .awsAccountId(ProactiveEngagementTestHelper.accountId)
+            .desiredResourceState(model)
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
-        assertThat(response.getResourceModel()
-                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
-        assertThat(response.getResourceModel()
-                .getEmergencyContactList()).isEqualTo(ProactiveEngagementTestHelper.convertEmergencyContactList(
-                ProactiveEngagementTestHelper.emergencyContactList));
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.ResourceConflict);
+        assertThat(response.getMessage()).containsIgnoringCase("Proactive engagement is already configured on the account.");
     }
 }

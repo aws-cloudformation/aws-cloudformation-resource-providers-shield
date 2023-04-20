@@ -23,7 +23,6 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.proactiveengagement.helper.EventualConsistencyHandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
@@ -45,10 +44,6 @@ public class ReadHandlerTest {
     @Mock
     private ShieldClient shieldClient;
 
-    @Mock
-    private EventualConsistencyHandlerHelper<ResourceModel, CallbackContext>
-            eventualConsistencyHandlerHelper;
-
     private ProxyClient<ShieldClient> proxyClient;
 
     private ReadHandler readHandler;
@@ -63,71 +58,71 @@ public class ReadHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
-        readHandler = new ReadHandler(shieldClient, eventualConsistencyHandlerHelper);
+        readHandler = new ReadHandler(shieldClient);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
         init = new AmazonWebServicesClientProxy(new LoggerProxy(),
-                MOCK_CREDENTIALS,
-                () -> Duration.ofSeconds(600).toMillis()).initiate("test", proxyClient, model, callbackContext);
+            MOCK_CREDENTIALS,
+            () -> Duration.ofSeconds(600).toMillis()).initiate("test", proxyClient, model, callbackContext);
     }
 
     @Test
     public void handleRequest_SimpleSuccess() {
-        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
-                .subscription(Subscription.builder()
-                        .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
-                        .build())
-                .build();
+            .subscription(Subscription.builder()
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
+                .build())
+            .build();
         doReturn(describeSubscriptionResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+            .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
         final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
-                DescribeEmergencyContactSettingsResponse.builder()
+            DescribeEmergencyContactSettingsResponse.builder()
                 .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
                 .build();
         doReturn(describeEmergencyContactSettingsResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+            .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(ProactiveEngagementTestHelper.accountId)
-                .desiredResourceState(model)
-                .nextToken("randomNextToken")
-                .build();
+            .awsAccountId(ProactiveEngagementTestHelper.accountId)
+            .desiredResourceState(model)
+            .nextToken("randomNextToken")
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            = readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()
-                .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
-                ProactiveEngagementTestHelper.emergencyContactList));
+            .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
+            ProactiveEngagementTestHelper.emergencyContactList));
         assertThat(response.getResourceModel()
-                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+            .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
 
     @Test
     public void handleRequest_NoProactiveEngagementFailure() {
-        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
-                .build();
+            .subscription(Subscription.builder()
+                .build())
+            .build();
         doReturn(describeSubscriptionResponse).when(proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+            .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .awsAccountId(ProactiveEngagementTestHelper.accountId)
-                .desiredResourceState(model)
-                .nextToken("randomNextToken")
-                .build();
+            .awsAccountId(ProactiveEngagementTestHelper.accountId)
+            .desiredResourceState(model)
+            .nextToken("randomNextToken")
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
@@ -137,15 +132,15 @@ public class ReadHandlerTest {
     @Test
     public void handleRequest_AccountNotFoundFailure() {
         final ResourceModel model = ResourceModel.builder()
-                .accountId(ProactiveEngagementTestHelper.accountId)
-                .build();
+            .accountId(ProactiveEngagementTestHelper.accountId)
+            .build();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
+            .desiredResourceState(model)
+            .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            readHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
