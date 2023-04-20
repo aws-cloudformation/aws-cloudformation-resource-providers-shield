@@ -25,35 +25,38 @@ public class ListHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         try {
             final List<ResourceModel> models = new ArrayList<>();
 
             final DescribeDrtAccessResponse describeDrtAccessResponse =
-                    HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
-            if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+                HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
+            if (!HandlerHelper.isDrtAccessConfigured(
+                describeDrtAccessResponse.roleArn(),
+                describeDrtAccessResponse.logBucketList()
+            )) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                        .resourceModels(models)
-                        .status(OperationStatus.SUCCESS)
-                        .build();
+                    .resourceModels(models)
+                    .status(OperationStatus.SUCCESS)
+                    .build();
             }
 
             models.add(ResourceModel.builder().accountId(request.getDesiredResourceState().getAccountId()).build());
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(models)
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+                .resourceModels(models)
+                .status(OperationStatus.SUCCESS)
+                .build();
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 }

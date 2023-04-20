@@ -1,10 +1,10 @@
 package software.amazon.shield.proactiveengagement;
 
-import software.amazon.shield.proactiveengagement.helper.EventualConsistencyCallbackContext;
+import software.amazon.cloudformation.proxy.StdCallbackContext;
 
 @lombok.Getter
 @lombok.Setter
 @lombok.ToString
 @lombok.EqualsAndHashCode(callSuper = true)
-public class CallbackContext extends EventualConsistencyCallbackContext {
+public class CallbackContext extends StdCallbackContext {
 }

@@ -17,7 +17,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
-public class DrtAccessTestHelper {
+public class DrtAccessTestBase {
     public static String name = "testDrtAccess";
     public static String accountId = "shield-unit-test";
     public static String roleArn = "arn:aws:iam::288146797873:role/service-role/test123";

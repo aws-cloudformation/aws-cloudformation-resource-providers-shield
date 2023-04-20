@@ -33,11 +33,15 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String protectionGroupArn = model.getProtectionGroupArn();
+        logger.log(String.format("ReadHandler: protectionGroup arn = %s", protectionGroupArn));
+        final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
+        logger.log(String.format("ReadHandler: protectionGroup id = %s", protectionGroupId));
 
         try {
             final DescribeProtectionGroupRequest describeProtectionGroupRequest =
                     DescribeProtectionGroupRequest.builder()
-                            .protectionGroupId(model.getProtectionGroupId())
+                            .protectionGroupId(protectionGroupId)
                             .build();
 
             final DescribeProtectionGroupResponse describeProtectionGroupResponse =
@@ -66,10 +70,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                 result.tags(tags);
             }
 
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(result.build())
-                    .status(OperationStatus.SUCCESS)
-                    .build();
+            return ProgressEvent.defaultSuccessHandler(result.build());
 
         } catch (RuntimeException e) {
             logger.log("[ERROR] ProtectionGroup ReadHandler: " + e);

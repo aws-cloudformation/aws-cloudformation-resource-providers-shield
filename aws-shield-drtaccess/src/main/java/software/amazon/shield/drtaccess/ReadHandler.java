@@ -40,23 +40,27 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         try {
             final DescribeDrtAccessResponse describeDrtAccessResponse =
                     HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
-            if (HandlerHelper.noDrtAccess(describeDrtAccessResponse)) {
+            if (!HandlerHelper.isDrtAccessConfigured(
+                describeDrtAccessResponse.roleArn(),
+                describeDrtAccessResponse.logBucketList()
+            )) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
                         .status(OperationStatus.FAILED)
                         .errorCode(HandlerErrorCode.NotFound)
                         .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
                         .build();
             }
-            final ResourceModel resourceModel = ResourceModel.builder()
-                    .accountId(request.getAwsAccountId())
-                    .roleArn(describeDrtAccessResponse.roleArn())
-                    .build();
+            final ResourceModel.ResourceModelBuilder resourceModelBuilder = ResourceModel.builder()
+                    .accountId(request.getAwsAccountId());
 
-            if (describeDrtAccessResponse.hasLogBucketList()) {
-                resourceModel.setLogBucketList(describeDrtAccessResponse.logBucketList());
+            if (describeDrtAccessResponse.roleArn() != null && !describeDrtAccessResponse.roleArn().isEmpty()) {
+                resourceModelBuilder.roleArn(describeDrtAccessResponse.roleArn());
+            }
+            if (describeDrtAccessResponse.logBucketList() != null && !describeDrtAccessResponse.logBucketList().isEmpty()) {
+                resourceModelBuilder.logBucketList(describeDrtAccessResponse.logBucketList());
             }
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModel(resourceModel)
+                    .resourceModel(resourceModelBuilder.build())
                     .status(OperationStatus.SUCCESS)
                     .build();
         } catch (RuntimeException e) {
