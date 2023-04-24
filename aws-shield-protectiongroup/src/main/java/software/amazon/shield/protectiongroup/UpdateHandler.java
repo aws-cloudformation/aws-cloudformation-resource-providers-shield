@@ -40,9 +40,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 UpdateProtectionGroupRequest.builder()
                     .protectionGroupId(protectionGroupId)
                     .aggregation(desiredState.getAggregation())
-                    .members(desiredState.getMembers())
-                    .pattern(desiredState.getPattern())
-                    .resourceType(desiredState.getResourceType());
+                    .pattern(desiredState.getPattern());
 
             if (desiredState.getPattern().equals("ARBITRARY")) {
                 updateProtectionGroupRequestBuilder.members(desiredState.getMembers());
