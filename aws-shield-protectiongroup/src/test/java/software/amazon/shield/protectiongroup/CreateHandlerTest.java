@@ -81,13 +81,6 @@ public class CreateHandlerTest {
         doReturn(describeProtectionGroupResponse)
             .when(this.proxy).injectCredentialsAndInvokeV2(any(DescribeProtectionGroupRequest.class), any());
 
-        final ListResourcesInProtectionGroupResponse listResourcesInProtectionGroupResponse =
-                ListResourcesInProtectionGroupResponse.builder()
-                                .resourceArns(ProtectionGroupTestData.MEMBERS)
-                                        .build();
-        doReturn(listResourcesInProtectionGroupResponse)
-                .when(this.proxy).injectCredentialsAndInvokeV2(any(ListResourcesInProtectionGroupRequest.class), any());
-
         registerListTags();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
