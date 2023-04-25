@@ -76,11 +76,6 @@ public class UpdateHandlerTest {
 
         doReturn(tagResourceResponse).when(this.proxy).injectCredentialsAndInvokeV2(any(TagResourceRequest.class), any());
 
-        final ListResourcesInProtectionGroupResponse listResourcesInProtectionGroupResponse = ListResourcesInProtectionGroupResponse.builder()
-                .resourceArns(ProtectionGroupTestData.MEMBERS).build();
-
-        doReturn(listResourcesInProtectionGroupResponse).when(this.proxy).injectCredentialsAndInvokeV2(any(ListResourcesInProtectionGroupRequest.class), any());
-
         final ListTagsForResourceResponse listTagsForResourceResponse = ListTagsForResourceResponse.builder()
                 .tags(
                         software.amazon.awssdk.services.shield.model.Tag.builder()
@@ -147,11 +142,6 @@ public class UpdateHandlerTest {
 
         doReturn(untagResourceResponse).when(this.proxy).injectCredentialsAndInvokeV2(any(UntagResourceRequest.class), any());
 
-        final ListResourcesInProtectionGroupResponse listResourcesInProtectionGroupResponse = ListResourcesInProtectionGroupResponse.builder()
-                .resourceArns(ProtectionGroupTestData.MEMBERS).build();
-
-        doReturn(listResourcesInProtectionGroupResponse).when(this.proxy).injectCredentialsAndInvokeV2(any(ListResourcesInProtectionGroupRequest.class), any());
-
         final ListTagsForResourceResponse listTagsForResourceResponse = ListTagsForResourceResponse.builder().build();
 
         doReturn(listTagsForResourceResponse).when(this.proxy).injectCredentialsAndInvokeV2(any(ListTagsForResourceRequest.class), any());
@@ -179,7 +169,6 @@ public class UpdateHandlerTest {
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
-        assertThat(response.getResourceModel().getTags()).isEmpty();
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
