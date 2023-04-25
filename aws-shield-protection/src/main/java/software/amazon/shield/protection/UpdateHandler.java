@@ -1,13 +1,10 @@
 package software.amazon.shield.protection;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import lombok.NonNull;
@@ -20,8 +17,6 @@ import software.amazon.awssdk.services.shield.model.DisableApplicationLayerAutom
 import software.amazon.awssdk.services.shield.model.DisassociateHealthCheckRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
-import software.amazon.awssdk.services.shield.model.TagResourceRequest;
-import software.amazon.awssdk.services.shield.model.UntagResourceRequest;
 import software.amazon.awssdk.services.shield.model.UpdateApplicationLayerAutomaticResponseRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
@@ -116,8 +111,8 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         healthCheckArnsBefore.removeAll(intersection);
         healthCheckArnsAfter.removeAll(intersection);
 
-        associateHealthChecks(protectionId, healthCheckArnsAfter, proxy);
         disassociateHealthChecks(protectionId, healthCheckArnsBefore, proxy);
+        associateHealthChecks(protectionId, healthCheckArnsAfter, proxy);
     }
 
     private void associateHealthChecks(

@@ -5,14 +5,12 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.CreateProtectionGroupRequest;
-import software.amazon.awssdk.services.shield.model.CreateProtectionGroupResponse;
-import software.amazon.awssdk.services.shield.model.CreateProtectionRequest;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
@@ -35,6 +33,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
         final ResourceModel model = request.getDesiredResourceState();
         final String protectionGroupId = model.getProtectionGroupId();
+
+        logger.log("Starting to create protection group. ");
 
         try {
             final CreateProtectionGroupRequest.Builder createProtectionGroupRequestBuilder =
