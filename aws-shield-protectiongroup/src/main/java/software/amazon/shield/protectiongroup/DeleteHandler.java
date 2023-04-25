@@ -30,11 +30,14 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
-        model.setProtectionGroupId(HandlerHelper.protectionArnToId(model.getProtectionGroupArn()));
+        final String protectionGroupArn = model.getProtectionGroupArn();
+        logger.log(String.format("DeleteHandler: protectionGroup arn = %s", protectionGroupArn));
+        final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
+        logger.log(String.format("DeleteHandler: protectionGroup id = %s", protectionGroupId));
         try {
             final DeleteProtectionGroupRequest deleteProtectionGroupRequest =
                     DeleteProtectionGroupRequest.builder()
-                            .protectionGroupId(model.getProtectionGroupId())
+                            .protectionGroupId(protectionGroupId)
                             .build();
 
             proxy.injectCredentialsAndInvokeV2(deleteProtectionGroupRequest, this.client::deleteProtectionGroup);

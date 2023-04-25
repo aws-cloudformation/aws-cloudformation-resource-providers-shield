@@ -41,7 +41,6 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
         logger.log(String.format("ReadHandler: protectionGroup id = %s", protectionGroupId));
 
-        model.setProtectionGroupId(HandlerHelper.protectionArnToId(model.getProtectionGroupArn()));
         try {
             final DescribeProtectionGroupRequest describeProtectionGroupRequest =
                     DescribeProtectionGroupRequest.builder()
