@@ -35,7 +35,6 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
         logger.log(String.format("UpdateHandler: protectionGroup id = %s", protectionGroupId));
 
-        desiredState.setProtectionGroupId(protectionGroupId);
         try {
             final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
                 UpdateProtectionGroupRequest.builder()
