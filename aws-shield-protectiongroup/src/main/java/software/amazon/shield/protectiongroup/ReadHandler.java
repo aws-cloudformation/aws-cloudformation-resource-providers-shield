@@ -9,8 +9,8 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupRespo
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
@@ -27,10 +27,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
         final String protectionGroupArn = model.getProtectionGroupArn();
@@ -40,45 +40,47 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
         try {
             final DescribeProtectionGroupRequest describeProtectionGroupRequest =
-                    DescribeProtectionGroupRequest.builder()
-                            .protectionGroupId(protectionGroupId)
-                            .build();
+                DescribeProtectionGroupRequest.builder()
+                    .protectionGroupId(protectionGroupId)
+                    .build();
 
             final DescribeProtectionGroupResponse describeProtectionGroupResponse =
-                    proxy.injectCredentialsAndInvokeV2(describeProtectionGroupRequest, client::describeProtectionGroup);
+                proxy.injectCredentialsAndInvokeV2(describeProtectionGroupRequest, client::describeProtectionGroup);
 
             final List<Tag> tags =
-                    HandlerHelper.getTags(
-                            proxy,
-                            client,
-                            describeProtectionGroupResponse.protectionGroup().protectionGroupArn(),
-                            tag -> Tag.builder()
-                                    .key(tag.key())
-                                    .value(tag.value())
-                                    .build());
+                HandlerHelper.getTags(
+                    proxy,
+                    client,
+                    describeProtectionGroupResponse.protectionGroup().protectionGroupArn(),
+                    tag -> Tag.builder()
+                        .key(tag.key())
+                        .value(tag.value())
+                        .build());
 
-            final ResourceModel.ResourceModelBuilder result =
-                    ResourceModel.builder()
-                            .protectionGroupId(describeProtectionGroupResponse.protectionGroup().protectionGroupId())
-                            .protectionGroupArn(describeProtectionGroupResponse.protectionGroup().protectionGroupArn())
-                            .pattern(describeProtectionGroupResponse.protectionGroup().patternAsString())
-                            .aggregation(describeProtectionGroupResponse.protectionGroup().aggregationAsString())
-                            .members(describeProtectionGroupResponse.protectionGroup().members())
-                            .resourceType(describeProtectionGroupResponse.protectionGroup().resourceTypeAsString());
+            final ResourceModel result =
+                ResourceModel.builder()
+                    .protectionGroupId(describeProtectionGroupResponse.protectionGroup().protectionGroupId())
+                    .protectionGroupArn(describeProtectionGroupResponse.protectionGroup().protectionGroupArn())
+                    .pattern(describeProtectionGroupResponse.protectionGroup().patternAsString())
+                    .members(describeProtectionGroupResponse.protectionGroup().members())
+                    .aggregation(describeProtectionGroupResponse.protectionGroup().aggregationAsString())
+                    .build();
 
-            if (!CollectionUtils.isNullOrEmpty(tags)) {
-                result.tags(tags);
+            if (null != describeProtectionGroupResponse.protectionGroup().resourceType()) {
+                result.setResourceType(describeProtectionGroupResponse.protectionGroup().resourceTypeAsString());
             }
-
-            return ProgressEvent.defaultSuccessHandler(result.build());
+            if (!CollectionUtils.isNullOrEmpty(tags)) {
+                result.setTags(tags);
+            }
+            return ProgressEvent.defaultSuccessHandler(result);
 
         } catch (RuntimeException e) {
             logger.log("[ERROR] ProtectionGroup ReadHandler: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(ExceptionConverter.convertToErrorCode(e))
-                    .message(e.getMessage())
-                    .build();
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
+                .message(e.getMessage())
+                .build();
         }
     }
 }

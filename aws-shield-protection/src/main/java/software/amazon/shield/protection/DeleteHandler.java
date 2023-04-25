@@ -49,7 +49,8 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
         } catch (ResourceNotFoundException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.SUCCESS)
+                .status(OperationStatus.FAILED)
+                .errorCode(ExceptionConverter.convertToErrorCode(e))
                 .build();
         } catch (RuntimeException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()

@@ -8,6 +8,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupResponse;
+import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupRequest;
+import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupResponse;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
 import software.amazon.awssdk.services.shield.model.ProtectionGroup;
@@ -49,6 +51,7 @@ public class ReadHandlerTest {
     public void handleRequest_SimpleSuccess() {
         final ResourceHandlerRequest<ResourceModel> request =
                 ResourceHandlerRequest.<ResourceModel>builder()
+                        .awsAccountId("111222")
                         .desiredResourceState(this.resourceModel)
                         .nextToken(ProtectionGroupTestData.NEXT_TOKEN)
                         .build();

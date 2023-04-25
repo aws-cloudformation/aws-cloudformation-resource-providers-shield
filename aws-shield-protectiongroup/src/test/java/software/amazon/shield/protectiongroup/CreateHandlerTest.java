@@ -10,6 +10,8 @@ import software.amazon.awssdk.services.shield.model.CreateProtectionGroupRequest
 import software.amazon.awssdk.services.shield.model.CreateProtectionGroupResponse;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupResponse;
+import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupRequest;
+import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupResponse;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
 import software.amazon.awssdk.services.shield.model.ProtectionGroup;
@@ -25,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateHandlerTest {
@@ -42,7 +43,7 @@ public class CreateHandlerTest {
     @BeforeEach
     public void setup() {
         this.proxy = mock(AmazonWebServicesClientProxy.class);
-        this.logger = mock(Logger.class, withSettings().verboseLogging());
+        this.logger = mock(Logger.class);
 
         this.createHandler = new CreateHandler(mock(ShieldClient.class));
         this.resourceModel = ProtectionGroupTestData.RESOURCE_MODEL;
@@ -100,7 +101,7 @@ public class CreateHandlerTest {
         ListTagsForResourceResponse tagResponse =
             ListTagsForResourceResponse.builder()
                 .tags(
-                    software.amazon.awssdk.services.shield.model.Tag.builder().key("k1").value("v1").build(),
+                    Tag.builder().key("k1").value("v1").build(),
                     Tag.builder().key("k2").value("v2").build())
                 .build();
 
