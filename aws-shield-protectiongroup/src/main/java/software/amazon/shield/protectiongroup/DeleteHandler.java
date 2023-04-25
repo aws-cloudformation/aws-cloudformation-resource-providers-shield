@@ -6,11 +6,12 @@ import software.amazon.awssdk.services.shield.model.DeleteProtectionGroupRequest
 import software.amazon.awssdk.services.shield.model.ResourceNotFoundException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.HandlerHelper;
 
 @RequiredArgsConstructor
 public class DeleteHandler extends BaseHandler<CallbackContext> {
@@ -29,7 +30,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
-
+        model.setProtectionGroupId(HandlerHelper.protectionArnToId(model.getProtectionGroupArn()));
         try {
             final DeleteProtectionGroupRequest deleteProtectionGroupRequest =
                     DeleteProtectionGroupRequest.builder()
@@ -44,7 +45,8 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
         } catch (ResourceNotFoundException e) {
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.SUCCESS)
+                    .status(OperationStatus.FAILED)
+                    .errorCode(ExceptionConverter.convertToErrorCode(e))
                     .build();
 
         } catch (RuntimeException e) {

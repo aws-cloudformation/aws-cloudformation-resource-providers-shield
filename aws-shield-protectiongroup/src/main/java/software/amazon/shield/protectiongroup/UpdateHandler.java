@@ -5,8 +5,8 @@ import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ExceptionConverter;
@@ -35,6 +35,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
         logger.log(String.format("UpdateHandler: protectionGroup id = %s", protectionGroupId));
 
+        desiredState.setProtectionGroupId(protectionGroupId);
         try {
             final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
                 UpdateProtectionGroupRequest.builder()
@@ -73,5 +74,4 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .build();
         }
     }
-
 }
