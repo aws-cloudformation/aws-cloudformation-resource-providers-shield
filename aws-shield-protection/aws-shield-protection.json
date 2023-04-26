@@ -104,7 +104,14 @@
                   "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Count` action.\nYou must specify exactly one action, either `Block` or `Count`.",
                   "type": "object",
                   "additionalProperties": false,
-                  "const": {}
+                  "properties": {
+                    "Block": {
+                      "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Block` action.\nYou must specify exactly one action, either `Block` or `Count`.",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "const": "{}"
+                    }
+                  }
                 }
               }
             },
@@ -116,7 +123,14 @@
                   "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Block` action.\nYou must specify exactly one action, either `Block` or `Count`.",
                   "type": "object",
                   "additionalProperties": false,
-                  "const": {}
+                  "properties": {
+                    "Block": {
+                      "description": "Specifies that Shield Advanced should configure its AWS WAF rules with the AWS WAF `Block` action.\nYou must specify exactly one action, either `Block` or `Count`.",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "const": {}
+                    }
+                  }
                 }
               }
             }
@@ -133,7 +147,7 @@
       }
     }
   },
- "handlers": {
+  "handlers": {
     "create": {
       "permissions": [
         "shield:CreateProtection",
