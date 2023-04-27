@@ -3,7 +3,6 @@ package software.amazon.shield.protection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Maps;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
@@ -105,8 +104,8 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         }
         return ApplicationLayerAutomaticResponseConfiguration.builder()
             .action(config.action().block() != null
-                ? Action.builder().block(Maps.newHashMap()).build()
-                : Action.builder().count(Maps.newHashMap()).build()
+                ? Action.builder().block(Block.builder().build()).build()
+                : Action.builder().count(Count.builder().build()).build()
             )
             .status(config.statusAsString())
             .build();
