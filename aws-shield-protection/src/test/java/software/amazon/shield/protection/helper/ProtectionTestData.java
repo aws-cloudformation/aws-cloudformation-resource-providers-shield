@@ -3,10 +3,10 @@ package software.amazon.shield.protection.helper;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import software.amazon.shield.protection.Action;
 import software.amazon.shield.protection.ApplicationLayerAutomaticResponseConfiguration;
 import software.amazon.shield.protection.ResourceModel;
-import software.amazon.shield.protection.Block;
 import software.amazon.shield.protection.Tag;
 
 public class ProtectionTestData {
@@ -41,7 +41,7 @@ public class ProtectionTestData {
             ApplicationLayerAutomaticResponseConfiguration.builder()
                     .action(
                             Action.builder()
-                                    .block(Block.builder().build())
+                                    .block(Maps.newHashMap())
                                     .build())
                     .status(ENABLED)
                     .build();
