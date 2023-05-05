@@ -8,6 +8,7 @@
     "taggable": false
   },
   "additionalProperties": false,
+  "required": ["RoleArn"],
   "properties": {
     "AccountId": {
       "type": "string"
