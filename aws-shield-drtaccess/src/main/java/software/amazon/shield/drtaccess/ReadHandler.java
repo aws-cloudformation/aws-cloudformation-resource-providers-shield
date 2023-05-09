@@ -64,6 +64,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                     .status(OperationStatus.SUCCESS)
                     .build();
         } catch (RuntimeException e) {
+            logger.log("[Error] - Read DRTAccess failed: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .status(OperationStatus.FAILED)
                     .errorCode(ExceptionConverter.convertToErrorCode(e))

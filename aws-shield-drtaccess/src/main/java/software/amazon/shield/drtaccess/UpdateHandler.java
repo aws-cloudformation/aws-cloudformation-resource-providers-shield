@@ -96,6 +96,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .status(OperationStatus.SUCCESS)
                 .build();
         } catch (RuntimeException e) {
+            logger.log("[Error] - Update DRTAccess failed: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
                 .errorCode(ExceptionConverter.convertToErrorCode(e))

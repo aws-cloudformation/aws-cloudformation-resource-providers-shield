@@ -45,13 +45,18 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                     .build();
             }
 
-            models.add(ResourceModel.builder().accountId(request.getDesiredResourceState().getAccountId()).build());
+            models.add(
+                ResourceModel.builder()
+                    .accountId(request.getAwsAccountId())
+                    .build()
+            );
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .resourceModels(models)
                 .status(OperationStatus.SUCCESS)
                 .build();
         } catch (RuntimeException e) {
+            logger.log("[Error] - List DRTAccess failed: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
                 .errorCode(ExceptionConverter.convertToErrorCode(e))
