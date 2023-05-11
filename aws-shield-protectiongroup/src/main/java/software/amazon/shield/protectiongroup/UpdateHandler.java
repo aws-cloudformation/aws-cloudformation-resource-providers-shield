@@ -63,7 +63,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 proxy
             );
 
-            return new ReadHandler(this.client).handleRequest(proxy, request, callbackContext, logger);
+            return ProgressEvent.defaultSuccessHandler(desiredState);
         } catch (RuntimeException e) {
             logger.log("[ERROR] ProtectionGroup UpdateHandler: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()

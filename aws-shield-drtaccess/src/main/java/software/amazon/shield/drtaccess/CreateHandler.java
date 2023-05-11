@@ -59,7 +59,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             HandlerHelper.associateDrtLogBucketList(proxy, client, model.getLogBucketList(), logger);
 
             model.setAccountId(request.getAwsAccountId());
-            return new ReadHandler(this.client).handleRequest(proxy, request, callbackContext, logger);
+            return ProgressEvent.defaultSuccessHandler(model);
         } catch (RuntimeException e) {
             logger.log("[Error] - Caught exception during associating DRT role and DRT log bucket list: " + e);
             return ProgressEvent.<ResourceModel, CallbackContext>builder()

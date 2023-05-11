@@ -77,7 +77,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 proxy
             );
 
-            return readProtection(protectionArn, proxy, logger);
+            return ProgressEvent.defaultSuccessHandler(desiredState);
 
         } catch (RuntimeException e) {
             logger.log(String.format("UpdateHandler: error %s", e));
@@ -234,24 +234,5 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                     .build(),
                 this.client::enableApplicationLayerAutomaticResponse);
         }
-    }
-
-    private ProgressEvent<ResourceModel, CallbackContext> readProtection(
-        @NonNull final String protectionArn,
-        @NonNull final AmazonWebServicesClientProxy proxy,
-        @NonNull final Logger logger) {
-
-        final ResourceModel readResourceModel =
-            ResourceModel.builder()
-                .protectionArn(protectionArn)
-                .build();
-
-        return new ReadHandler(this.client).handleRequest(
-            proxy,
-            ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(readResourceModel)
-                .build(),
-            null,
-            logger);
     }
 }

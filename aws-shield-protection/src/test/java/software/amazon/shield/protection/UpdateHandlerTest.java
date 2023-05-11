@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.shield.model.AssociateHealthCheckResponse
 import software.amazon.awssdk.services.shield.model.BlockAction;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
-import software.amazon.awssdk.services.shield.model.DisableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseResponse;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
@@ -22,7 +21,6 @@ import software.amazon.awssdk.services.shield.model.ResponseAction;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.services.shield.model.TagResourceRequest;
 import software.amazon.awssdk.services.shield.model.TagResourceResponse;
-import software.amazon.awssdk.services.shield.model.UpdateApplicationLayerAutomaticResponseRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -124,42 +122,15 @@ public class UpdateHandlerTest {
 
     @Test
     public void minimalUpdates() {
-
-        final DescribeProtectionResponse describeProtectionResponse =
-            DescribeProtectionResponse.builder()
-                .protection(
-                    Protection.builder()
-                        .name(ProtectionTestData.NAME_1)
-                        .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
-                        .protectionArn(ProtectionTestData.PROTECTION_ARN)
-                        .id(ProtectionTestData.PROTECTION_ID)
-                        .build())
-                .build();
-
-        when(this.proxy
-            .injectCredentialsAndInvokeV2(any(), any()))
-            .thenAnswer(i -> {
-                if (i.getArgument(0) instanceof DescribeProtectionRequest) {
-                    return describeProtectionResponse;
-                } else if (i.getArgument(0) instanceof ListTagsForResourceRequest) {
-                    return ListTagsForResourceResponse.builder().build();
-                } else if (
-                    i.getArgument(0) instanceof EnableApplicationLayerAutomaticResponseRequest
-                        || i.getArgument(0) instanceof DisableApplicationLayerAutomaticResponseRequest
-                        || i.getArgument(0) instanceof UpdateApplicationLayerAutomaticResponseRequest
-                ) {
-                    throw new AssertionError("l4 protection must not invoke l7 apis");
-                }
-                throw new AssertionError("unknown invocation: " + i.getArgument(0));
-            });
-
         final ResourceHandlerRequest<ResourceModel> request =
             ResourceHandlerRequest.<ResourceModel>builder()
                 .previousResourceState(ResourceModel.builder()
+                    .protectionId(ProtectionTestData.PROTECTION_ID)
                     .protectionArn(ProtectionTestData.PROTECTION_ARN)
                     .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
                     .build())
                 .desiredResourceState(ResourceModel.builder()
+                    .protectionId(ProtectionTestData.PROTECTION_ID)
                     .protectionArn(ProtectionTestData.PROTECTION_ARN)
                     .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
                     .build())
@@ -171,7 +142,6 @@ public class UpdateHandlerTest {
 
         final ResourceModel expectedReturningModel = ResourceModel.builder()
             .protectionId(ProtectionTestData.PROTECTION_ID)
-            .name(ProtectionTestData.NAME_1)
             .protectionArn(ProtectionTestData.PROTECTION_ARN)
             .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
             .build();

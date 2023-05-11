@@ -8,14 +8,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.CreateProtectionGroupRequest;
 import software.amazon.awssdk.services.shield.model.CreateProtectionGroupResponse;
-import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupRequest;
-import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupResponse;
-import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupRequest;
-import software.amazon.awssdk.services.shield.model.ListResourcesInProtectionGroupResponse;
-import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
-import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
-import software.amazon.awssdk.services.shield.model.ProtectionGroup;
-import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -52,39 +44,21 @@ public class CreateHandlerTest {
     @Test
     public void handleRequest_SimpleSuccess() {
         final ResourceHandlerRequest<ResourceModel> request =
-                ResourceHandlerRequest.<ResourceModel>builder()
-                        .desiredResourceState(this.resourceModel)
-                        .awsAccountId("111222")
-                        .nextToken(ProtectionGroupTestData.NEXT_TOKEN)
-                        .build();
-
-        final CreateProtectionGroupResponse createProtectionGroupResponse =
-                CreateProtectionGroupResponse.builder()
-                        .build();
-
-        doReturn(createProtectionGroupResponse)
-                .when(this.proxy).injectCredentialsAndInvokeV2(any(CreateProtectionGroupRequest.class), any());
-
-        final DescribeProtectionGroupResponse describeProtectionGroupResponse =
-            DescribeProtectionGroupResponse.builder()
-                .protectionGroup(
-                    ProtectionGroup.builder()
-                        .protectionGroupId(ProtectionGroupTestData.PROTECTION_GROUP_ID)
-                        .protectionGroupArn(ProtectionGroupTestData.PROTECTION_GROUP_ARN)
-                        .resourceType(ProtectionGroupTestData.RESOURCE_TYPE)
-                        .aggregation(ProtectionGroupTestData.AGGREGATION)
-                        .pattern(ProtectionGroupTestData.PATTERN)
-                        .members(ProtectionGroupTestData.MEMBERS)
-                        .build())
+            ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(this.resourceModel)
+                .awsAccountId("111222")
+                .nextToken(ProtectionGroupTestData.NEXT_TOKEN)
                 .build();
 
-        doReturn(describeProtectionGroupResponse)
-            .when(this.proxy).injectCredentialsAndInvokeV2(any(DescribeProtectionGroupRequest.class), any());
+        final CreateProtectionGroupResponse createProtectionGroupResponse =
+            CreateProtectionGroupResponse.builder()
+                .build();
 
-        registerListTags();
+        doReturn(createProtectionGroupResponse)
+            .when(this.proxy).injectCredentialsAndInvokeV2(any(CreateProtectionGroupRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.createHandler.handleRequest(this.proxy, request, null, this.logger);
+            this.createHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -94,19 +68,5 @@ public class CreateHandlerTest {
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
         assertThat(response.getResourceModel()).isEqualTo(this.resourceModel);
-    }
-
-    private void registerListTags() {
-
-        ListTagsForResourceResponse tagResponse =
-            ListTagsForResourceResponse.builder()
-                .tags(
-                    Tag.builder().key("k1").value("v1").build(),
-                    Tag.builder().key("k2").value("v2").build())
-                .build();
-
-        doReturn(tagResponse)
-            .when(this.proxy)
-            .injectCredentialsAndInvokeV2(any(ListTagsForResourceRequest.class), any());
     }
 }

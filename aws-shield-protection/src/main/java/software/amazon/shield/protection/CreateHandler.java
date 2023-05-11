@@ -186,23 +186,4 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 .build(),
             this.client::enableApplicationLayerAutomaticResponse);
     }
-
-    private ProgressEvent<ResourceModel, CallbackContext> readProtection(
-        @NonNull final String protectionId,
-        @NonNull final AmazonWebServicesClientProxy proxy,
-        @NonNull final Logger logger) {
-
-        final ResourceModel readResourceModel =
-            ResourceModel.builder()
-                .protectionId(protectionId)
-                .build();
-
-        return new ReadHandler(this.client).handleRequest(
-            proxy,
-            ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(readResourceModel)
-                .build(),
-            null,
-            logger);
-    }
 }
