@@ -92,6 +92,7 @@ public class DeleteHandler extends BaseHandlerStd {
                     return ProgressEvent.defaultSuccessHandler(model);
                 });
         } catch (RuntimeException e) {
+            logger.log("[ERROR] delete ProactiveEngagement failed " + e);
             return ProgressEvent.failed(
                 model,
                 callbackContext,

@@ -85,6 +85,7 @@ public class CreateHandler extends BaseHandlerStd {
                     return ProgressEvent.defaultSuccessHandler(model);
                 });
         } catch (RuntimeException e) {
+            logger.log("[ERROR] create ProactiveEngagement failed " + e);
             return ProgressEvent.failed(
                 model,
                 callbackContext,

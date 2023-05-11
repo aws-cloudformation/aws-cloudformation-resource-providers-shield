@@ -18,6 +18,8 @@ import software.amazon.awssdk.core.retry.conditions.RetryOnExceptionsCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnStatusCodeCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnThrottlingCondition;
 import software.amazon.awssdk.services.shield.ShieldClient;
+import software.amazon.awssdk.services.shield.model.InternalErrorException;
+import software.amazon.awssdk.services.shield.model.LimitsExceededException;
 import software.amazon.awssdk.services.shield.model.OptimisticLockException;
 import software.amazon.cloudformation.LambdaWrapper;
 
@@ -28,12 +30,14 @@ public class CustomerAPIClientBuilder {
         Set<Class<? extends Exception>> retryableExceptions =
             new HashSet<>(SdkDefaultRetrySetting.RETRYABLE_EXCEPTIONS);
         retryableExceptions.add(OptimisticLockException.class);
+        retryableExceptions.add(InternalErrorException.class);
+        retryableExceptions.add(LimitsExceededException.class);
         CFN_RETRYABLE_EXCEPTIONS = ImmutableSet.copyOf(retryableExceptions);
     }
 
     private static final BackoffStrategy BACKOFF_THROTTLING_STRATEGY =
         EqualJitterBackoffStrategy.builder()
-            .baseDelay(Duration.ofMillis(1500)) //account for jitter so 1st retry is ~1 sec
+            .baseDelay(Duration.ofMillis(3000))
             .maxBackoffTime(SdkDefaultRetrySetting.MAX_BACKOFF)
             .build();
 
@@ -64,7 +68,8 @@ public class CustomerAPIClientBuilder {
     public static ShieldClient getClient() {
         return ShieldClient.builder()
             .overrideConfiguration(ClientOverrideConfiguration.builder()
-                .retryPolicy(RETRY_POLICY).build())
+                .retryPolicy(RETRY_POLICY)
+                .build())
             .httpClient(LambdaWrapper.HTTP_CLIENT)
             .build();
     }

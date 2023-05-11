@@ -73,6 +73,7 @@ public class ListHandler extends BaseHandlerStd {
                 .status(OperationStatus.SUCCESS)
                 .build();
         } catch (RuntimeException e) {
+            logger.log("[ERROR] list ProactiveEngagement failed " + e);
             return ProgressEvent.failed(
                 request.getDesiredResourceState(),
                 callbackContext,

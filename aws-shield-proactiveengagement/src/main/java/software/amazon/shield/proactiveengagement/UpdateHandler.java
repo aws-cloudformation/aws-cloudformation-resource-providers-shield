@@ -87,6 +87,7 @@ public class UpdateHandler extends BaseHandlerStd {
                     return ProgressEvent.defaultSuccessHandler(desiredState);
                 });
         } catch (RuntimeException e) {
+            logger.log("[ERROR] update ProactiveEngagement failed " + e);
             return ProgressEvent.failed(
                 desiredState,
                 callbackContext,

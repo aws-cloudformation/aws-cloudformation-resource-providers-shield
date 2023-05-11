@@ -94,6 +94,7 @@ public class ReadHandler extends BaseHandlerStd {
 
             return ProgressEvent.defaultSuccessHandler(model);
         } catch (RuntimeException e) {
+            logger.log("[ERROR] read ProactiveEngagement failed " + e);
             return ProgressEvent.failed(
                 model,
                 callbackContext,
