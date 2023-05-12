@@ -12,6 +12,7 @@ import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
+import software.amazon.awssdk.core.retry.conditions.AndRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.OrRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnClockSkewCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnExceptionsCondition;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.InternalErrorException;
 import software.amazon.awssdk.services.shield.model.LimitsExceededException;
 import software.amazon.awssdk.services.shield.model.OptimisticLockException;
+import software.amazon.awssdk.services.shield.model.ShieldException;
 import software.amazon.cloudformation.LambdaWrapper;
 
 public class CustomerAPIClientBuilder {
@@ -37,7 +39,7 @@ public class CustomerAPIClientBuilder {
 
     private static final BackoffStrategy BACKOFF_THROTTLING_STRATEGY =
         EqualJitterBackoffStrategy.builder()
-            .baseDelay(Duration.ofMillis(3000))
+            .baseDelay(Duration.ofMillis(2000))
             .maxBackoffTime(SdkDefaultRetrySetting.MAX_BACKOFF)
             .build();
 
@@ -45,23 +47,16 @@ public class CustomerAPIClientBuilder {
         RetryPolicy.builder()
             .numRetries(5) //average delay is ~30 sec if all retries attempted
             .retryCondition(OrRetryCondition.create(
-                RetryOnStatusCodeCondition.create(SdkDefaultRetrySetting.RETRYABLE_STATUS_CODES),
-                RetryOnExceptionsCondition.create(CFN_RETRYABLE_EXCEPTIONS),
-                RetryOnClockSkewCondition.create(),
-                RetryOnThrottlingCondition.create()))
-            .throttlingBackoffStrategy(BACKOFF_THROTTLING_STRATEGY)
-            .build();
-
-    private static final RetryPolicy PUT_LOGGING_CONFIG_RETRY_POLICY =
-        RetryPolicy.builder()
-            .numRetries(5) //average delay is ~30 sec if all retries attempted
-            .retryCondition(OrRetryCondition.create(
-                RetryOnStatusCodeCondition.create(SdkDefaultRetrySetting.RETRYABLE_STATUS_CODES),
-                RetryOnExceptionsCondition
-                    .create(ImmutableSet.of(RetryableException.class,
-                        IOException.class)),
-                RetryOnClockSkewCondition.create(),
-                RetryOnThrottlingCondition.create()))
+                    RetryOnStatusCodeCondition.create(SdkDefaultRetrySetting.RETRYABLE_STATUS_CODES),
+                    RetryOnExceptionsCondition.create(CFN_RETRYABLE_EXCEPTIONS),
+                    RetryOnClockSkewCondition.create(),
+                    RetryOnThrottlingCondition.create(),
+                    AndRetryCondition.create(
+                        RetryOnExceptionsCondition.create(ImmutableSet.of(ShieldException.class)),
+                        RetryOnErrorMessageSubStringCondition.create("Rate exceeded")
+                    )
+                )
+            )
             .throttlingBackoffStrategy(BACKOFF_THROTTLING_STRATEGY)
             .build();
 
