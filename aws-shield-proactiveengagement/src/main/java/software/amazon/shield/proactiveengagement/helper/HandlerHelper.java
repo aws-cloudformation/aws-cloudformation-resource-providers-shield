@@ -71,7 +71,13 @@ public class HandlerHelper {
                     shieldClient::disableProactiveEngagement))
                 .stabilize((r, response, client, m, c) -> HandlerHelper.stabilizeProactiveEngagementStatus(client))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - disableProactiveEngagement failed: " + e);
+                    logger.log(String.format(
+                        "[Error] - disableProactiveEngagement failed: cause=%s; message=%s; class=%s",
+                        e.getCause(),
+                        e.getMessage(),
+                        e.getClass().getCanonicalName()
+                    ));
+
                     return ProgressEvent.failed(m,
                         callbackContext,
                         ExceptionConverter.convertToErrorCode((RuntimeException) e),
@@ -99,7 +105,13 @@ public class HandlerHelper {
                     shieldClient::enableProactiveEngagement))
                 .stabilize((r, response, client, m, c) -> HandlerHelper.stabilizeProactiveEngagementStatus(client))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - enableProactiveEngagement failed: " + e);
+                    logger.log(String.format(
+                        "[Error] - enableProactiveEngagement failed: cause=%s; message=%s; class=%s",
+                        e.getCause(),
+                        e.getMessage(),
+                        e.getClass().getCanonicalName()
+                    ));
+
                     return ProgressEvent.failed(
                         m,
                         callbackContext,
@@ -129,7 +141,12 @@ public class HandlerHelper {
                 .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                     shieldClient::updateEmergencyContactSettings))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - updateEmergencyContactSettings failed: " + e);
+                    logger.log(String.format(
+                        "[Error] - updateEmergencyContactSettings failed: cause=%s; message=%s; class=%s",
+                        e.getCause(),
+                        e.getMessage(),
+                        e.getClass().getCanonicalName()
+                    ));
                     return ProgressEvent.failed(
                         m,
                         callbackContext,
