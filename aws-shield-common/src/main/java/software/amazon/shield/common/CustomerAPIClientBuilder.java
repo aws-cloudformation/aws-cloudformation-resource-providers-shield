@@ -9,6 +9,7 @@ import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
+import software.amazon.awssdk.core.retry.conditions.AndRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.OrRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnClockSkewCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnExceptionsCondition;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.InternalErrorException;
 import software.amazon.awssdk.services.shield.model.LimitsExceededException;
 import software.amazon.awssdk.services.shield.model.OptimisticLockException;
+import software.amazon.awssdk.services.shield.model.ShieldException;
 import software.amazon.cloudformation.LambdaWrapper;
 
 public class CustomerAPIClientBuilder {
@@ -27,9 +29,9 @@ public class CustomerAPIClientBuilder {
         LimitsExceededException.class
     );
 
-    private static final BackoffStrategy BACKOFF_THROTTLING_STRATEGY =
+    private static final BackoffStrategy BACKOFF_STRATEGY =
         EqualJitterBackoffStrategy.builder()
-            .baseDelay(Duration.ofMillis(1500))
+            .baseDelay(Duration.ofMillis(2000))
             .maxBackoffTime(SdkDefaultRetrySetting.MAX_BACKOFF)
             .build();
 
@@ -42,10 +44,14 @@ public class CustomerAPIClientBuilder {
                     RetryOnClockSkewCondition.create(),
                     RetryOnThrottlingCondition.create(),
                     RetryOnExceptionsCondition.create(CFN_RETRYABLE_EXCEPTIONS),
-                    RetryOnErrorMessageSubStringCondition.create("Rate exceeded")
+                    AndRetryCondition.create(
+                        RetryOnExceptionsCondition.create(ImmutableSet.of(ShieldException.class)),
+                        RetryOnErrorMessageSubStringCondition.create("Rate exceeded")
+                    )
                 )
             )
-            .throttlingBackoffStrategy(BACKOFF_THROTTLING_STRATEGY)
+            .backoffStrategy(BACKOFF_STRATEGY)
+            .throttlingBackoffStrategy(BACKOFF_STRATEGY)
             .build();
 
     public static ShieldClient getClient() {
