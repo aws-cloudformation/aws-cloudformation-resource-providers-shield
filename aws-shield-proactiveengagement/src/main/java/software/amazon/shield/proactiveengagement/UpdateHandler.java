@@ -34,7 +34,7 @@ public class UpdateHandler extends BaseHandlerStd {
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
 
-        logger.log("Starting to handle update request.");
+        logger.log(String.format("UpdateHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                 callbackContext,

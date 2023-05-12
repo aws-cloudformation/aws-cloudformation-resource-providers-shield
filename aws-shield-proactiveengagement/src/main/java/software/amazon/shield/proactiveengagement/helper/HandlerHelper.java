@@ -64,21 +64,21 @@ public class HandlerHelper {
         final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
-            logger.log("Starting to disable proactive engagement.");
+            logger.log("HandlerHelper: disableProactiveEngagement");
             return proxy.initiate("shield::disable-proactive-engagement", proxyClient, model, context)
                 .translateToServiceRequest(m -> DisableProactiveEngagementRequest.builder().build())
                 .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                     shieldClient::disableProactiveEngagement))
                 .stabilize((r, response, client, m, c) -> HandlerHelper.stabilizeProactiveEngagementStatus(client))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - Caught exception during disabling proactive engagement: " + e);
+                    logger.log("[Error] - disableProactiveEngagement failed: " + e);
                     return ProgressEvent.failed(m,
                         callbackContext,
                         ExceptionConverter.convertToErrorCode((RuntimeException) e),
                         e.getMessage());
                 })
                 .done(res -> {
-                    logger.log("Succeed disabling proactive engagement.");
+                    logger.log("disableProactiveEngagement succeeded");
                     return ProgressEvent.progress(model, context);
                 });
         }
@@ -92,14 +92,14 @@ public class HandlerHelper {
         final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
-            logger.log("Starting to enable proactive engagement.");
+            logger.log("HandlerHelper: enableProactiveEngagement");
             return proxy.initiate("shield::enable-proactive-engagement", proxyClient, model, context)
                 .translateToServiceRequest(m -> EnableProactiveEngagementRequest.builder().build())
                 .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                     shieldClient::enableProactiveEngagement))
                 .stabilize((r, response, client, m, c) -> HandlerHelper.stabilizeProactiveEngagementStatus(client))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - Caught exception during enabling proactive engagement: " + e);
+                    logger.log("[Error] - enableProactiveEngagement failed: " + e);
                     return ProgressEvent.failed(
                         m,
                         callbackContext,
@@ -107,7 +107,7 @@ public class HandlerHelper {
                         e.getMessage());
                 })
                 .done(res -> {
-                    logger.log("Succeed enabling proactive engagement.");
+                    logger.log("enableProactiveEngagement succeeded");
                     return ProgressEvent.progress(model, context);
                 });
         }
@@ -121,7 +121,7 @@ public class HandlerHelper {
         final Logger logger
     ) {
         try (ShieldClient shieldClient = proxyClient.client()) {
-            logger.log("Starting to update proactive engagement settings.");
+            logger.log("HandlerHelper: updateEmergencyContactSettings");
             return proxy.initiate("shield::update-emergency-contact-settings", proxyClient, model, context)
                 .translateToServiceRequest(m -> UpdateEmergencyContactSettingsRequest.builder()
                     .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(model.getEmergencyContactList()))
@@ -129,7 +129,7 @@ public class HandlerHelper {
                 .makeServiceCall((req, client) -> proxy.injectCredentialsAndInvokeV2(req,
                     shieldClient::updateEmergencyContactSettings))
                 .handleError((request, e, client, m, callbackContext) -> {
-                    logger.log("[Error] - Caught exception during updating emergency contact settings: " + e);
+                    logger.log("[Error] - updateEmergencyContactSettings failed: " + e);
                     return ProgressEvent.failed(
                         m,
                         callbackContext,
@@ -137,7 +137,7 @@ public class HandlerHelper {
                         e.getMessage());
                 })
                 .done(res -> {
-                    logger.log("Succeed updating proactive engagement settings.");
+                    logger.log("updateEmergencyContactSettings succeeded");
                     return ProgressEvent.progress(model, context);
                 });
         }

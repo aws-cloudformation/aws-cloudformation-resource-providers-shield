@@ -35,7 +35,7 @@ public class CreateHandler extends BaseHandlerStd {
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
 
-        logger.log("starting to handle create request");
+        logger.log(String.format("CreateHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
         final ResourceModel model = request.getDesiredResourceState();
         model.setAccountId(request.getAwsAccountId());
 

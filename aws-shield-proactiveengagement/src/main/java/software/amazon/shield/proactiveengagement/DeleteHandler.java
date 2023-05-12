@@ -35,7 +35,7 @@ public class DeleteHandler extends BaseHandlerStd {
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
 
-        logger.log("Starting to disable proactive engagement.");
+        logger.log(String.format("DeleteHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                 callbackContext,
@@ -88,7 +88,7 @@ public class DeleteHandler extends BaseHandlerStd {
                         logger);
                 })
                 .then(progress -> {
-                    logger.log("Succeed disabling proactive engagement.");
+                    logger.log("Successfully disabled ProactiveEngagement.");
                     return ProgressEvent.defaultSuccessHandler(model);
                 });
         } catch (RuntimeException e) {

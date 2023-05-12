@@ -35,7 +35,7 @@ public class ListHandler extends BaseHandlerStd {
         final CallbackContext callbackContext,
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
-        logger.log("Starting to list resources.");
+        logger.log(String.format("ListHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
 
         try {
             final List<ResourceModel> models = new ArrayList<>();

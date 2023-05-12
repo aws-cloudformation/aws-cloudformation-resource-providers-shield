@@ -8,7 +8,7 @@ public class RetryOnErrorMessageSubStringCondition implements RetryCondition {
     private final String errorMessageSubString;
 
     public RetryOnErrorMessageSubStringCondition(final String errorMessageSubString) {
-        this.errorMessageSubString = errorMessageSubString;
+        this.errorMessageSubString = errorMessageSubString.toLowerCase();
     }
 
     @Override
@@ -17,7 +17,7 @@ public class RetryOnErrorMessageSubStringCondition implements RetryCondition {
         if (exception == null) {
             return false;
         }
-        return exception.getMessage().contains(this.errorMessageSubString);
+        return exception.getMessage().toLowerCase().contains(this.errorMessageSubString);
     }
 
     public static RetryOnErrorMessageSubStringCondition create(String errorMessageSubString) {

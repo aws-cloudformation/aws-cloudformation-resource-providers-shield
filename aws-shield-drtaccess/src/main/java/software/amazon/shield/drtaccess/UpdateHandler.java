@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -12,8 +11,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.AssociateDrtRoleRequest;
-import software.amazon.awssdk.services.shield.model.AssociateDrtRoleResponse;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
