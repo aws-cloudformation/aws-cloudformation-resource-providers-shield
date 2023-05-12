@@ -8,7 +8,7 @@ import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
-import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
+import software.amazon.awssdk.core.retry.backoff.FixedDelayBackoffStrategy;
 import software.amazon.awssdk.core.retry.conditions.AndRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.OrRetryCondition;
 import software.amazon.awssdk.core.retry.conditions.RetryOnClockSkewCondition;
@@ -22,6 +22,8 @@ import software.amazon.awssdk.services.shield.model.OptimisticLockException;
 import software.amazon.awssdk.services.shield.model.ShieldException;
 import software.amazon.cloudformation.LambdaWrapper;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
+
 public class CustomerAPIClientBuilder {
     public static final Set<Class<? extends Exception>> CFN_RETRYABLE_EXCEPTIONS = ImmutableSet.of(
         OptimisticLockException.class,
@@ -30,10 +32,7 @@ public class CustomerAPIClientBuilder {
     );
 
     private static final BackoffStrategy BACKOFF_STRATEGY =
-        EqualJitterBackoffStrategy.builder()
-            .baseDelay(Duration.ofMillis(2000))
-            .maxBackoffTime(SdkDefaultRetrySetting.MAX_BACKOFF)
-            .build();
+        FixedDelayBackoffStrategy.create(Duration.of(2, SECONDS));
 
     private static final RetryPolicy RETRY_POLICY =
         RetryPolicy.builder()
