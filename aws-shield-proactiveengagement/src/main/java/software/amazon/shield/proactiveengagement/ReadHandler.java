@@ -8,13 +8,14 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
+import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 
@@ -35,7 +36,10 @@ public class ReadHandler extends BaseHandlerStd {
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
 
-        logger.log(String.format("ReadHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
+        logger.log(String.format("ReadHandler: ProactiveEngagement AccountID = %s, ClientToken = %s",
+            request.getAwsAccountId(),
+            request.getClientRequestToken()));
+
         if (!HandlerHelper.callerAccountIdMatchesResourcePrimaryId(request)) {
             return ProgressEvent.failed(request.getDesiredResourceState(),
                 callbackContext,
@@ -43,64 +47,76 @@ public class ReadHandler extends BaseHandlerStd {
                 HandlerHelper.ACCOUNT_ID_MISMATCH_ERROR_MSG);
         }
 
-        final ResourceModel model = ResourceModel.builder().build();
-        model.setAccountId(request.getAwsAccountId());
-        model.setProactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString());
-        model.setEmergencyContactList(Collections.emptyList());
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeSubscriptionRequest,
+                DescribeSubscriptionResponse>builder()
+            .resourceType("ProactiveEngagement")
+            .handlerName("ReadHandler")
+            .apiName("describeSubscription")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(ResourceModel.builder()
+                .accountId(request.getAwsAccountId())
+                .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
+                .emergencyContactList(Collections.emptyList())
+                .build())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
+            .getRequestFunction(c -> c::describeSubscription)
+            .onSuccess((req, res, c, m, ctx) -> {
+                final Subscription subscription = res.subscription();
+                if (subscription == null) {
+                    logger.log("ReadHandler: early exit due to no subscription.");
+                    return ProgressEvent.failed(
+                        m,
+                        ctx,
+                        HandlerErrorCode.NotFound,
+                        HandlerHelper.SUBSCRIPTION_REQUIRED_ERROR_MSG);
+                }
+                ctx.setSubscription(subscription);
+                return null;
+            })
+            .build()
+            .initiate()
+            .then(progress -> ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
+                    DescribeEmergencyContactSettingsRequest, DescribeEmergencyContactSettingsResponse>builder()
+                .resourceType("ProactiveEngagement")
+                .handlerName("ReadHandler")
+                .apiName("describeEmergencyContactSettings")
+                .proxy(proxy)
+                .proxyClient(proxyClient)
+                .model(progress.getResourceModel())
+                .context(progress.getCallbackContext())
+                .logger(logger)
+                .translateToServiceRequest(m -> DescribeEmergencyContactSettingsRequest.builder().build())
+                .getRequestFunction(c -> c::describeEmergencyContactSettings)
+                .onSuccess((req, res, c, m, ctx) -> {
+                    if (!HandlerHelper.isProactiveEngagementConfigured(
+                        ctx.getSubscription(),
+                        res.emergencyContactList())
+                    ) {
+                        logger.log("ReadHandler: early exit due to proactive engagement not configured.");
+                        return ProgressEvent.failed(
+                            m,
+                            ctx,
+                            HandlerErrorCode.NotFound,
+                            HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
+                    }
+                    if (ProactiveEngagementStatus.ENABLED.equals(ctx.getSubscription()
+                        .proactiveEngagementStatus())) {
+                        m.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
+                    }
 
-        try {
-            final DescribeSubscriptionResponse describeSubscriptionResponse = proxy.injectCredentialsAndInvokeV2(
-                DescribeSubscriptionRequest.builder().build(),
-                shieldClient::describeSubscription);
-
-            if (describeSubscriptionResponse.subscription() == null) {
-                logger.log("ReadHandler: early exit due to no subscription.");
-                return ProgressEvent.failed(
-                    ResourceModel.builder().accountId(request.getAwsAccountId()).build(),
-                    callbackContext,
-                    HandlerErrorCode.NotFound,
-                    HandlerHelper.SUBSCRIPTION_REQUIRED_ERROR_MSG);
-            }
-
-            final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
-                proxy.injectCredentialsAndInvokeV2(
-                    DescribeEmergencyContactSettingsRequest.builder().build(),
-                    shieldClient::describeEmergencyContactSettings);
-
-            if (!HandlerHelper.isProactiveEngagementConfigured(
-                describeSubscriptionResponse,
-                describeEmergencyContactSettingsResponse
-            )) {
-                logger.log("ReadHandler: early exit due to proactive engagement not configured.");
-                return ProgressEvent.failed(
-                    ResourceModel.builder().accountId(request.getAwsAccountId()).build(),
-                    callbackContext,
-                    HandlerErrorCode.NotFound,
-                    HandlerHelper.NO_PROACTIVE_ENGAGEMENT_ERROR_MSG);
-            }
-
-            if (ProactiveEngagementStatus.ENABLED.equals(describeSubscriptionResponse.subscription()
-                .proactiveEngagementStatus())) {
-                model.setProactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString());
-            }
-
-            if (
-                describeEmergencyContactSettingsResponse.emergencyContactList() != null
-                    && !describeEmergencyContactSettingsResponse.emergencyContactList().isEmpty()
-            ) {
-                model.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(
-                    describeEmergencyContactSettingsResponse.emergencyContactList()));
-            }
-
-            return ProgressEvent.defaultSuccessHandler(model);
-        } catch (RuntimeException e) {
-            logger.log("[ERROR] read ProactiveEngagement failed " + e);
-            return ProgressEvent.failed(
-                model,
-                callbackContext,
-                ExceptionConverter.convertToErrorCode(e),
-                e.getMessage());
-        }
-
+                    if (
+                        res.emergencyContactList() != null
+                            && !res.emergencyContactList().isEmpty()
+                    ) {
+                        m.setEmergencyContactList(HandlerHelper.convertSDKEmergencyContactList(
+                            res.emergencyContactList()));
+                    }
+                    return ProgressEvent.defaultSuccessHandler(m);
+                })
+                .build()
+                .initiate());
     }
 }

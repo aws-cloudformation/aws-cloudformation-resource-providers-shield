@@ -22,27 +22,27 @@ import software.amazon.cloudformation.proxy.HandlerErrorCode;
 public class ExceptionConverter<T> {
 
     private static final Map<Class<? extends ShieldException>, HandlerErrorCode> MAPPING =
-            ImmutableMap.<Class<? extends ShieldException>, HandlerErrorCode>builder()
-                    .put(AccessDeniedException.class, HandlerErrorCode.AccessDenied)
-                    .put(AccessDeniedForDependencyException.class, HandlerErrorCode.AccessDenied)
-                    .put(InternalErrorException.class, HandlerErrorCode.ServiceInternalError)
-                    .put(InvalidOperationException.class, HandlerErrorCode.InvalidRequest)
-                    .put(InvalidPaginationTokenException.class, HandlerErrorCode.InvalidRequest)
-                    .put(InvalidParameterException.class, HandlerErrorCode.InvalidRequest)
-                    .put(InvalidResourceException.class, HandlerErrorCode.InvalidRequest)
-                    .put(LimitsExceededException.class, HandlerErrorCode.ServiceLimitExceeded)
-                    .put(LockedSubscriptionException.class, HandlerErrorCode.ResourceConflict)
-                    .put(NoAssociatedRoleException.class, HandlerErrorCode.InvalidCredentials)
-                    .put(OptimisticLockException.class, HandlerErrorCode.ResourceConflict)
-                    .put(ResourceAlreadyExistsException.class, HandlerErrorCode.AlreadyExists)
-                    .put(ResourceNotFoundException.class, HandlerErrorCode.NotFound)
-                    .build();
+        ImmutableMap.<Class<? extends ShieldException>, HandlerErrorCode>builder()
+            .put(AccessDeniedException.class, HandlerErrorCode.AccessDenied)
+            .put(AccessDeniedForDependencyException.class, HandlerErrorCode.AccessDenied)
+            .put(InternalErrorException.class, HandlerErrorCode.ServiceInternalError)
+            .put(InvalidOperationException.class, HandlerErrorCode.InvalidRequest)
+            .put(InvalidPaginationTokenException.class, HandlerErrorCode.InvalidRequest)
+            .put(InvalidParameterException.class, HandlerErrorCode.InvalidRequest)
+            .put(InvalidResourceException.class, HandlerErrorCode.InvalidRequest)
+            .put(LimitsExceededException.class, HandlerErrorCode.ServiceLimitExceeded)
+            .put(LockedSubscriptionException.class, HandlerErrorCode.ResourceConflict)
+            .put(NoAssociatedRoleException.class, HandlerErrorCode.InvalidCredentials)
+            .put(OptimisticLockException.class, HandlerErrorCode.NotStabilized)
+            .put(ResourceAlreadyExistsException.class, HandlerErrorCode.AlreadyExists)
+            .put(ResourceNotFoundException.class, HandlerErrorCode.NotFound)
+            .build();
 
     public static HandlerErrorCode convertToErrorCode(RuntimeException error) {
         HandlerErrorCode translatedErrorCode = MAPPING.get(error.getClass());
 
         return translatedErrorCode == null
-                ? HandlerErrorCode.GeneralServiceException
-                : translatedErrorCode;
+            ? HandlerErrorCode.GeneralServiceException
+            : translatedErrorCode;
     }
 }

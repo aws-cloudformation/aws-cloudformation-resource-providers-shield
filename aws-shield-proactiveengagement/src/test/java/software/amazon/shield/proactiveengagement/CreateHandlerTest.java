@@ -17,7 +17,6 @@ import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
-import software.amazon.cloudformation.proxy.CallChain;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.LoggerProxy;
@@ -32,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper.MOCK_CREDENTIALS;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,24 +54,20 @@ public class CreateHandlerTest {
 
     private ResourceModel model;
 
-    private CallChain.RequestMaker<ShieldClient, ResourceModel, CallbackContext> init;
-
     @BeforeEach
     public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
+        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+            MOCK_CREDENTIALS,
+            () -> Duration.ofSeconds(600).toMillis()));
         logger = mock(Logger.class);
         createHandler = new CreateHandler(shieldClient);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
-        init = new AmazonWebServicesClientProxy(new LoggerProxy(),
-            MOCK_CREDENTIALS,
-            () -> Duration.ofSeconds(600).toMillis()).initiate("test", proxyClient, model, callbackContext);
     }
 
     @Test
     public void handleRequest_SimpleSuccess() {
-        doReturn(init).when(proxy).initiate(any(), any(), any(), any());
         // Mock describe subscription
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
             .subscription(Subscription.builder().build())
@@ -166,6 +162,7 @@ public class CreateHandlerTest {
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
         assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.ResourceConflict);
-        assertThat(response.getMessage()).containsIgnoringCase("Proactive engagement is already configured on the account.");
+        assertThat(response.getMessage()).containsIgnoringCase(
+            "Proactive engagement is already configured on the account.");
     }
 }

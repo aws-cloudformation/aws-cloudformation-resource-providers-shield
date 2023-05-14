@@ -21,16 +21,6 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.cloudformation.resource.IdentifierUtils;
 
 public class HandlerHelper {
-    private static final int MAX_LENGTH_RESOURCE_NAME = 50;
-
-    public static <T> String generateName(@NonNull final ResourceHandlerRequest<T> request) {
-        return IdentifierUtils.generateResourceIdentifier(
-            request.getLogicalResourceIdentifier(),
-            request.getClientRequestToken(),
-            MAX_LENGTH_RESOURCE_NAME
-        );
-    }
-
     public static <T> List<T> getTags(
         @NonNull final AmazonWebServicesClientProxy proxy,
         @NonNull final ShieldClient client,

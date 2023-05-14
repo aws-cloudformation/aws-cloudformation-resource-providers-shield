@@ -1,20 +1,21 @@
 package software.amazon.shield.proactiveengagement;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
+import com.google.common.collect.ImmutableList;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsRequest;
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
+import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 
@@ -35,50 +36,70 @@ public class ListHandler extends BaseHandlerStd {
         final CallbackContext callbackContext,
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
-        logger.log(String.format("ListHandler: ProactiveEngagement AccountID = %s", request.getAwsAccountId()));
+        logger.log(String.format("ListHandler: ProactiveEngagement AccountID = %s, ClientToken = %s",
+            request.getAwsAccountId(),
+            request.getClientRequestToken()));
 
-        try {
-            final List<ResourceModel> models = new ArrayList<>();
-            final DescribeSubscriptionResponse describeSubscriptionResponse = proxy.injectCredentialsAndInvokeV2(
-                DescribeSubscriptionRequest.builder().build(),
-                shieldClient::describeSubscription);
-
-            if (describeSubscriptionResponse.subscription() == null) {
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeSubscriptionRequest,
+                DescribeSubscriptionResponse>builder()
+            .resourceType("ProactiveEngagement")
+            .handlerName("ListHandler")
+            .apiName("describeSubscription")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(ResourceModel.builder().build())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
+            .getRequestFunction(c -> c::describeSubscription)
+            .onSuccess((req, res, c, m, ctx) -> {
+                final Subscription subscription = res.subscription();
+                if (subscription == null) {
+                    logger.log("ListHandler: early exit due to no subscription.");
+                    return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                        .resourceModels(Collections.emptyList())
+                        .status(OperationStatus.SUCCESS)
+                        .build();
+                }
+                ctx.setSubscription(subscription);
+                return null;
+            })
+            .build()
+            .initiate()
+            .then(progress -> ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
+                    DescribeEmergencyContactSettingsRequest, DescribeEmergencyContactSettingsResponse>builder()
+                .resourceType("ProactiveEngagement")
+                .handlerName("ListHandler")
+                .apiName("describeEmergencyContactSettings")
+                .proxy(proxy)
+                .proxyClient(proxyClient)
+                .model(progress.getResourceModel())
+                .context(progress.getCallbackContext())
+                .logger(logger)
+                .translateToServiceRequest(m -> DescribeEmergencyContactSettingsRequest.builder().build())
+                .getRequestFunction(c -> c::describeEmergencyContactSettings)
+                .onSuccess((req, res, c, m, ctx) -> {
+                    if (!HandlerHelper.isProactiveEngagementConfigured(
+                        ctx.getSubscription(),
+                        res.emergencyContactList())
+                    ) {
+                        logger.log("ListHandler: early exit due to proactive engagement not configured.");
+                        return ProgressEvent.<ResourceModel, CallbackContext>builder()
+                            .resourceModels(Collections.emptyList())
+                            .status(OperationStatus.SUCCESS)
+                            .build();
+                    }
+                    return null;
+                })
+                .build()
+                .initiate())
+            .then(progress -> {
+                final ResourceModel model = progress.getResourceModel();
+                model.setAccountId(request.getAwsAccountId());
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(models)
+                    .resourceModels(ImmutableList.of(model))
                     .status(OperationStatus.SUCCESS)
                     .build();
-            }
-
-            final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
-                proxy.injectCredentialsAndInvokeV2(
-                    DescribeEmergencyContactSettingsRequest.builder().build(),
-                    shieldClient::describeEmergencyContactSettings);
-
-            if (!HandlerHelper.isProactiveEngagementConfigured(
-                describeSubscriptionResponse,
-                describeEmergencyContactSettingsResponse
-            )) {
-                return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(models)
-                    .status(OperationStatus.SUCCESS)
-                    .build();
-            }
-
-            final ResourceModel model = ResourceModel.builder().build();
-            model.setAccountId(request.getAwsAccountId());
-            models.add(model);
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModels(models)
-                .status(OperationStatus.SUCCESS)
-                .build();
-        } catch (RuntimeException e) {
-            logger.log("[ERROR] list ProactiveEngagement failed " + e);
-            return ProgressEvent.failed(
-                request.getDesiredResourceState(),
-                callbackContext,
-                ExceptionConverter.convertToErrorCode(e),
-                e.getMessage());
-        }
+            });
     }
 }
