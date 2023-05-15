@@ -79,9 +79,12 @@ public class ShieldAPIChainableRemoteCall<
     }
 
     private ResponseT makeServiceCall(RequestT request, ProxyClient<ShieldClient> proxyClient) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(JITTER_SECONDS * 1000));
-        } catch (InterruptedException ignored) {
+        if (JITTER_SECONDS > 0) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(JITTER_SECONDS * 1000));
+            } catch (InterruptedException ignored) {
+
+            }
         }
 
         return proxy.injectCredentialsAndInvokeV2(request, getRequestFunction.apply(proxyClient.client()));
