@@ -1,5 +1,7 @@
 package software.amazon.shield.protectiongroup;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +15,9 @@ import software.amazon.awssdk.services.shield.model.UntagResourceResponse;
 import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupRequest;
 import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Credentials;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -23,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
 public class UpdateHandlerTest {
@@ -38,7 +43,9 @@ public class UpdateHandlerTest {
 
     @BeforeEach
     public void setup() {
-        this.proxy = mock(AmazonWebServicesClientProxy.class);
+        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+            new Credentials("accessKey", "secretKey", "token"),
+            () -> Duration.ofSeconds(600).toMillis()));
         this.logger = mock(Logger.class);
 
         this.updateHandler = new UpdateHandler(mock(ShieldClient.class));
@@ -71,7 +78,7 @@ public class UpdateHandlerTest {
             .injectCredentialsAndInvokeV2(any(TagResourceRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
+            = this.updateHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -112,7 +119,7 @@ public class UpdateHandlerTest {
             .injectCredentialsAndInvokeV2(any(UntagResourceRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
+            = this.updateHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

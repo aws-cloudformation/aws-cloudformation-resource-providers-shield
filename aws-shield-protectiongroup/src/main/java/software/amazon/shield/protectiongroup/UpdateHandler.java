@@ -3,22 +3,22 @@ package software.amazon.shield.protectiongroup;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupRequest;
+import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.common.HandlerHelper;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 
 @RequiredArgsConstructor
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public UpdateHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
@@ -28,49 +28,57 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final CallbackContext callbackContext,
         final Logger logger) {
 
-        final ResourceModel currentState = request.getPreviousResourceState();
-        final ResourceModel desiredState = request.getDesiredResourceState();
-        final String protectionGroupArn = desiredState.getProtectionGroupArn();
-        logger.log(String.format("UpdateHandler: protectionGroup arn = %s", protectionGroupArn));
-        final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
-        logger.log(String.format("UpdateHandler: protectionGroup id = %s", protectionGroupId));
+        logger.log(String.format("UpdateHandler: ProtectionGroupArn = %s, ClientToken = %s",
+            request.getDesiredResourceState().getProtectionGroupArn(),
+            request.getClientRequestToken()));
+        logger.log(String.format("UpdateHandler: ProtectionGroupId = %s, ClientToken = %s",
+            HandlerHelper.protectionArnToId(request.getDesiredResourceState().getProtectionGroupArn()),
+            request.getClientRequestToken()));
 
-        try {
-            final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
-                UpdateProtectionGroupRequest.builder()
-                    .protectionGroupId(protectionGroupId)
-                    .aggregation(desiredState.getAggregation())
-                    .pattern(desiredState.getPattern());
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, UpdateProtectionGroupRequest,
+                UpdateProtectionGroupResponse>builder()
+            .resourceType("ProtectionGroup")
+            .handlerName("UpdateHandler")
+            .apiName("updateProtectionGroup")
+            .proxy(proxy)
+            .proxyClient(proxy.newProxy(() -> this.shieldClient))
+            .model(request.getDesiredResourceState())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> {
+                final UpdateProtectionGroupRequest.Builder updateProtectionGroupRequestBuilder =
+                    UpdateProtectionGroupRequest.builder()
+                        .protectionGroupId(HandlerHelper.protectionArnToId(m.getProtectionGroupArn()))
+                        .aggregation(m.getAggregation())
+                        .pattern(m.getPattern());
 
-            if (desiredState.getPattern().equals("ARBITRARY")) {
-                updateProtectionGroupRequestBuilder.members(desiredState.getMembers());
-            } else if (desiredState.getPattern().equals("BY_RESOURCE_TYPE")) {
-                updateProtectionGroupRequestBuilder.resourceType(desiredState.getResourceType());
-            }
+                if (m.getPattern().equals("ARBITRARY")) {
+                    updateProtectionGroupRequestBuilder.members(m.getMembers());
+                } else if (m.getPattern().equals("BY_RESOURCE_TYPE")) {
+                    updateProtectionGroupRequestBuilder.resourceType(m.getResourceType());
+                }
 
-            proxy.injectCredentialsAndInvokeV2(updateProtectionGroupRequestBuilder.build(),
-                this.client::updateProtectionGroup);
-
-            HandlerHelper.updateTags(
-                desiredState.getTags(),
+                return updateProtectionGroupRequestBuilder.build();
+            })
+            .getRequestFunction(c -> c::updateProtectionGroup)
+            .build()
+            .initiate()
+            .then(progress -> HandlerHelper.updateTagsChainable(
+                progress.getResourceModel().getTags(),
                 Tag::getKey,
                 Tag::getValue,
-                currentState.getTags(),
+                request.getPreviousResourceState().getTags(),
                 Tag::getKey,
                 Tag::getValue,
-                protectionGroupArn,
-                this.client,
-                proxy
-            );
-
-            return ProgressEvent.defaultSuccessHandler(desiredState);
-        } catch (RuntimeException e) {
-            logger.log("[ERROR] ProtectionGroup UpdateHandler: " + e);
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
+                progress.getResourceModel().getProtectionGroupArn(),
+                "ProtectionGroup",
+                "UpdateHandler",
+                proxy,
+                proxy.newProxy(() -> this.shieldClient),
+                progress.getResourceModel(),
+                progress.getCallbackContext(),
+                logger
+            ))
+            .then(progress -> ProgressEvent.defaultSuccessHandler(progress.getResourceModel()));
     }
 }

@@ -9,20 +9,19 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionGroupRespo
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.common.HandlerHelper;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 
 @RequiredArgsConstructor
 public class ReadHandler extends BaseHandler<CallbackContext> {
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public ReadHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
@@ -32,55 +31,54 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final CallbackContext callbackContext,
         final Logger logger) {
 
-        final ResourceModel model = request.getDesiredResourceState();
-        final String protectionGroupArn = model.getProtectionGroupArn();
-        logger.log(String.format("ReadHandler: protectionGroup arn = %s", protectionGroupArn));
-        final String protectionGroupId = HandlerHelper.protectionArnToId(protectionGroupArn);
-        logger.log(String.format("ReadHandler: protectionGroup id = %s", protectionGroupId));
+        logger.log(String.format("ReadHandler: ProtectionGroupArn = %s, ClientToken = %s",
+            request.getDesiredResourceState().getProtectionGroupArn(),
+            request.getClientRequestToken()));
+        logger.log(String.format("ReadHandler: ProtectionGroupId = %s, ClientToken = %s",
+            HandlerHelper.protectionArnToId(request.getDesiredResourceState().getProtectionGroupArn()),
+            request.getClientRequestToken()));
 
-        try {
-            final DescribeProtectionGroupRequest describeProtectionGroupRequest =
-                DescribeProtectionGroupRequest.builder()
-                    .protectionGroupId(protectionGroupId)
-                    .build();
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeProtectionGroupRequest,
+                DescribeProtectionGroupResponse>builder()
+            .resourceType("ProtectionGroup")
+            .handlerName("DescribeHandler")
+            .apiName("describeProtectionGroup")
+            .proxy(proxy)
+            .proxyClient(proxy.newProxy(() -> this.shieldClient))
+            .model(request.getDesiredResourceState())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> DescribeProtectionGroupRequest.builder()
+                .protectionGroupId(HandlerHelper.protectionArnToId(m.getProtectionGroupArn()))
+                .build())
+            .getRequestFunction(c -> c::describeProtectionGroup)
+            .onSuccess((req, res, c, m, ctx) -> {
+                final List<Tag> tags =
+                    HandlerHelper.getTags(
+                        proxy,
+                        c.client(),
+                        res.protectionGroup().protectionGroupArn(),
+                        tag -> Tag.builder()
+                            .key(tag.key())
+                            .value(tag.value())
+                            .build());
+                final ResourceModel result =
+                    ResourceModel.builder()
+                        .protectionGroupId(res.protectionGroup().protectionGroupId())
+                        .protectionGroupArn(res.protectionGroup().protectionGroupArn())
+                        .pattern(res.protectionGroup().patternAsString())
+                        .members(res.protectionGroup().members())
+                        .aggregation(res.protectionGroup().aggregationAsString())
+                        .build();
 
-            final DescribeProtectionGroupResponse describeProtectionGroupResponse =
-                proxy.injectCredentialsAndInvokeV2(describeProtectionGroupRequest, client::describeProtectionGroup);
-
-            final List<Tag> tags =
-                HandlerHelper.getTags(
-                    proxy,
-                    client,
-                    describeProtectionGroupResponse.protectionGroup().protectionGroupArn(),
-                    tag -> Tag.builder()
-                        .key(tag.key())
-                        .value(tag.value())
-                        .build());
-
-            final ResourceModel result =
-                ResourceModel.builder()
-                    .protectionGroupId(describeProtectionGroupResponse.protectionGroup().protectionGroupId())
-                    .protectionGroupArn(describeProtectionGroupResponse.protectionGroup().protectionGroupArn())
-                    .pattern(describeProtectionGroupResponse.protectionGroup().patternAsString())
-                    .members(describeProtectionGroupResponse.protectionGroup().members())
-                    .aggregation(describeProtectionGroupResponse.protectionGroup().aggregationAsString())
-                    .build();
-
-            if (null != describeProtectionGroupResponse.protectionGroup().resourceType()) {
-                result.setResourceType(describeProtectionGroupResponse.protectionGroup().resourceTypeAsString());
-            }
-            if (!CollectionUtils.isNullOrEmpty(tags)) {
-                result.setTags(tags);
-            }
-            return ProgressEvent.defaultSuccessHandler(result);
-
-        } catch (RuntimeException e) {
-            logger.log("[ERROR] ProtectionGroup ReadHandler: " + e);
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
+                if (null != res.protectionGroup().resourceType()) {
+                    result.setResourceType(res.protectionGroup().resourceTypeAsString());
+                }
+                if (!CollectionUtils.isNullOrEmpty(tags)) {
+                    result.setTags(tags);
+                }
+                return ProgressEvent.defaultSuccessHandler(result);
+            })
+            .build().initiate();
     }
 }

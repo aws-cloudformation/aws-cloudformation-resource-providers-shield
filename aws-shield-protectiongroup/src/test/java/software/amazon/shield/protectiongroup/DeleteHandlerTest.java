@@ -1,5 +1,7 @@
 package software.amazon.shield.protectiongroup;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,7 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Credentials;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -15,6 +19,7 @@ import software.amazon.shield.protectiongroup.helper.ProtectionGroupTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
 public class DeleteHandlerTest {
@@ -30,7 +35,9 @@ public class DeleteHandlerTest {
 
     @BeforeEach
     public void setup() {
-        this.proxy = mock(AmazonWebServicesClientProxy.class);
+        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+            new Credentials("accessKey", "secretKey", "token"),
+            () -> Duration.ofSeconds(600).toMillis()));
         this.logger = mock(Logger.class);
 
         this.deleteHandler = new DeleteHandler(mock(ShieldClient.class));
@@ -46,7 +53,7 @@ public class DeleteHandlerTest {
                         .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.deleteHandler.handleRequest(this.proxy, request, null, this.logger);
+                this.deleteHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
