@@ -49,9 +49,26 @@ public class ShieldAPIChainableRemoteCall<
     public @NonNull
     final Function<ShieldClient, Function<RequestT, ResponseT>> getRequestFunction;
 
+    /**
+     * watch out when using stabilize.
+     * when stabilize fails the entire call will be retried again, not just the stabilizer call
+     * this can break idempotency for the handler
+     * The recommended approach is to chain the stabilizer after an empty API call
+     */
+    public @Nullable
+    final Stabilizer<ShieldClient, ResourceModelT, CallbackContextT, Boolean> stabilize;
+
     public @Nullable
     final Callback<RequestT, ResponseT, ShieldClient, ResourceModelT, CallbackContextT, ProgressEvent<ResourceModelT,
         CallbackContextT>> onSuccess;
+
+    @FunctionalInterface
+    public interface Stabilizer<ClientT, ModelT, CallbackT extends StdCallbackContext, ReturnT> {
+        ReturnT invoke(
+            ProxyClient<ClientT> client,
+            ModelT model,
+            CallbackT context);
+    }
 
     private String getCallGraph() {
         return String.format("%s:%s:%s", this.resourceType, this.handlerName, this.apiName);
@@ -91,6 +108,32 @@ public class ShieldAPIChainableRemoteCall<
             e.getMessage());
     }
 
+    private Boolean onStabilize(
+        final RequestT request,
+        final ResponseT response,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModelT resourceModel,
+        final CallbackContextT callbackContext) {
+        final String callGraph = this.getCallGraph();
+        logger.log(String.format("[INFO] Stabilizing Requesting %s", callGraph));
+        if (this.stabilize != null) {
+            try {
+                return this.stabilize.invoke(
+                    proxyClient,
+                    resourceModel,
+                    callbackContext
+                );
+            } catch (ShieldException e) {
+                if (this.isRateExceededException(e)) {
+                    logger.log(String.format("[WARN] Rate exceeded while stabilizing %s: %s", callGraph, e));
+                    return false;
+                }
+                throw e;
+            }
+        }
+        return true;
+    }
+
     private ProgressEvent<ResourceModelT, CallbackContextT> onDone(
         final RequestT request,
         final ResponseT response,
@@ -115,13 +158,29 @@ public class ShieldAPIChainableRemoteCall<
     public ProgressEvent<ResourceModelT, CallbackContextT> initiate() {
         final String callGraph = this.getCallGraph();
         logger.log(String.format("[INFO] Start Requesting %s", callGraph));
-        return this.proxy.initiate(callGraph, proxyClient, model, context)
+        ProgressEvent<ResourceModelT, CallbackContextT> progress = this.proxy.initiate(callGraph,
+                proxyClient,
+                model,
+                context)
             .translateToServiceRequest(this.translateToServiceRequest)
             .makeServiceCall(this::makeServiceCall)
-            // we do not support use of stabilize because if stabilize fails the whole step will be executed again
-            // that can break idempotency for the handler
-            // to stabilize, simply chain another step with .then()
             .handleError(this::handleError)
             .done(this::onDone);
+        if (this.stabilize != null) {
+            progress = progress.then(p ->
+                this.proxy.initiate(
+                        String.format("%s:%s", callGraph, "stabilize"),
+                        proxyClient,
+                        p.getResourceModel(),
+                        p.getCallbackContext()
+                    )
+                    .translateToServiceRequest((ignored) -> (RequestT) null)
+                    .makeServiceCall((ignored1, ignored2) -> (ResponseT) null)
+                    .stabilize(this::onStabilize)
+                    .handleError(this::handleError)
+                    .progress()
+            );
+        }
+        return progress;
     }
 }

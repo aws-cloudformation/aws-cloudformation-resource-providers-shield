@@ -18,7 +18,6 @@ import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.proactiveengagement.helper.BaseHandlerStd;
 import software.amazon.shield.proactiveengagement.helper.HandlerHelper;
 
-import static software.amazon.shield.proactiveengagement.helper.HandlerHelper.stabilizeProactiveEngagementStatus;
 
 public class CreateHandler extends BaseHandlerStd {
 
@@ -60,7 +59,8 @@ public class CreateHandler extends BaseHandlerStd {
                 final Subscription subscription = res.subscription();
                 if (subscription == null) {
                     logger.log("CreateHandler: early exit due to no subscription.");
-                    return ProgressEvent.failed(m,
+                    return ProgressEvent.failed(
+                        m,
                         ctx,
                         HandlerErrorCode.InvalidRequest,
                         HandlerHelper.SUBSCRIPTION_REQUIRED_ERROR_MSG);
@@ -86,7 +86,8 @@ public class CreateHandler extends BaseHandlerStd {
                     if (HandlerHelper.isProactiveEngagementConfigured(ctx.getSubscription(),
                         res.emergencyContactList())) {
                         logger.log("CreateHandler: early exit due to proactive engagement already configured.");
-                        return ProgressEvent.failed(m,
+                        return ProgressEvent.failed(
+                            m,
                             ctx,
                             HandlerErrorCode.ResourceConflict,
                             HandlerHelper.PROACTIVE_ENGAGEMENT_ALREADY_CONFIGURED_ERROR_MSG);
@@ -111,16 +112,9 @@ public class CreateHandler extends BaseHandlerStd {
                             .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(m.getEmergencyContactList()))
                             .build())
                         .getRequestFunction(c -> c::associateProactiveEngagementDetails)
+                        .stabilize(HandlerHelper::stabilizeProactiveEngagementStatus)
                         .build()
-                        .initiate()
-                        .then(progress2 -> stabilizeProactiveEngagementStatus(
-                            "CreateHandler",
-                            proxy,
-                            proxyClient,
-                            progress2.getResourceModel(),
-                            progress2.getCallbackContext(),
-                            logger
-                        ));
+                        .initiate();
 
                 } else {
                     return reconfigProactiveEngagement(proxy,

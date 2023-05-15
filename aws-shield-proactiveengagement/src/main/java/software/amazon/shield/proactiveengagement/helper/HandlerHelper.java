@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
 import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
-import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
@@ -34,8 +33,6 @@ public class HandlerHelper {
     public static final String NO_PROACTIVE_ENGAGEMENT_ERROR_MSG = "Proactive engagement is not configured on account.";
     public static final String PROACTIVE_ENGAGEMENT_ALREADY_CONFIGURED_ERROR_MSG = "Proactive engagement is already " +
         "configured on the account.";
-
-    public static final String PROACTIVE_ENGAGEMENT_PENDING = "Proactive engagement is in pending status.";
 
     public static boolean callerAccountIdMatchesResourcePrimaryId(ResourceHandlerRequest<ResourceModel> request) {
         return request.getAwsAccountId() != null && request.getDesiredResourceState()
@@ -77,19 +74,11 @@ public class HandlerHelper {
             .context(context)
             .logger(logger)
             .translateToServiceRequest(
-m-> DisableProactiveEngagementRequest.builder().build())
+                m -> DisableProactiveEngagementRequest.builder().build())
             .getRequestFunction(c -> c::disableProactiveEngagement)
+            .stabilize(HandlerHelper::stabilizeProactiveEngagementStatus)
             .build()
-            .initiate()
-            .then(progress -> stabilizeProactiveEngagementStatus(
-                handlerName,
-                proxy,
-                proxyClient,
-                progress.getResourceModel(),
-                progress.getCallbackContext(),
-                logger
-            ));
-
+            .initiate();
     }
 
     public static ProgressEvent<ResourceModel, CallbackContext> enableProactiveEngagement(
@@ -112,16 +101,9 @@ m-> DisableProactiveEngagementRequest.builder().build())
             .logger(logger)
             .translateToServiceRequest(m -> EnableProactiveEngagementRequest.builder().build())
             .getRequestFunction(c -> c::enableProactiveEngagement)
+            .stabilize(HandlerHelper::stabilizeProactiveEngagementStatus)
             .build()
-            .initiate()
-            .then(progress -> stabilizeProactiveEngagementStatus(
-                handlerName,
-                proxy,
-                proxyClient,
-                progress.getResourceModel(),
-                progress.getCallbackContext(),
-                logger
-            ));
+            .initiate();
     }
 
     public static ProgressEvent<ResourceModel, CallbackContext> updateEmergencyContactSettings(
@@ -146,54 +128,29 @@ m-> DisableProactiveEngagementRequest.builder().build())
                 .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(model.getEmergencyContactList()))
                 .build())
             .getRequestFunction(c -> c::updateEmergencyContactSettings)
-            .build()
-            .initiate()
-            .then(progress -> stabilizeProactiveEngagementStatus(
-                handlerName,
-                proxy,
-                proxyClient,
-                progress.getResourceModel(),
-                progress.getCallbackContext(),
-                logger
-            ));
-    }
-
-    public static ProgressEvent<ResourceModel, CallbackContext> stabilizeProactiveEngagementStatus(
-        final String handlerName,
-        final AmazonWebServicesClientProxy proxy,
-        final ProxyClient<ShieldClient> proxyClient,
-        final ResourceModel model,
-        final CallbackContext context,
-        final Logger logger
-    ) {
-        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeSubscriptionRequest,
-                DescribeSubscriptionResponse>builder()
-            .resourceType("ProactiveEngagement")
-            .handlerName(handlerName + ".HandlerHelper")
-            .apiName("stabilizeProactiveEngagementStatus(describeSubscription)")
-            .proxy(proxy)
-            .proxyClient(proxyClient)
-            .model(model)
-            .context(context)
-            .logger(logger)
-            .translateToServiceRequest(m -> DescribeSubscriptionRequest.builder().build())
-            .getRequestFunction(c -> c::describeSubscription)
-            .onSuccess((req, res, c, m, ctx) -> {
-                if (res.subscription() != null
-                    && res.subscription().proactiveEngagementStatus() != null
-                    && !res.subscription().proactiveEngagementStatus().equals(ProactiveEngagementStatus.PENDING)
-                ) {
-                    return null;
-                }
-                return ProgressEvent.failed(
-                    m,
-                    ctx,
-                    HandlerErrorCode.NotStabilized,
-                    PROACTIVE_ENGAGEMENT_PENDING
-                );
-            })
+            .stabilize(HandlerHelper::stabilizeProactiveEngagementStatus)
             .build()
             .initiate();
+    }
+
+    public static Boolean stabilizeProactiveEngagementStatus(
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel ignored1,
+        final CallbackContext ignored2
+    ) {
+        DescribeSubscriptionResponse res = proxyClient.injectCredentialsAndInvokeV2(
+            DescribeSubscriptionRequest.builder().build(),
+            proxyClient.client()::describeSubscription
+        );
+        if (res.subscription() != null
+            && res.subscription().proactiveEngagementStatus() != null
+            && !res.subscription().proactiveEngagementStatus().equals(ProactiveEngagementStatus.PENDING)
+        ) {
+            return true;
+        }
+        {
+            return false;
+        }
     }
 
     public static List<software.amazon.shield.proactiveengagement.EmergencyContact> convertSDKEmergencyContactList(List<software.amazon.awssdk.services.shield.model.EmergencyContact> emergencyContactList) {

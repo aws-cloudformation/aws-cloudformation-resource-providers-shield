@@ -60,7 +60,8 @@ public class DeleteHandler extends BaseHandlerStd {
                 final Subscription subscription = res.subscription();
                 if (subscription == null) {
                     logger.log("DeleteHandler: early exit due to no subscription.");
-                    return ProgressEvent.failed(m,
+                    return ProgressEvent.failed(
+                        m,
                         ctx,
                         HandlerErrorCode.InvalidRequest,
                         HandlerHelper.SUBSCRIPTION_REQUIRED_ERROR_MSG);
