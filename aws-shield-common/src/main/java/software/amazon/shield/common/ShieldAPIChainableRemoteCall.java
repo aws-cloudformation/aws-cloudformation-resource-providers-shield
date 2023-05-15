@@ -1,5 +1,7 @@
 package software.amazon.shield.common;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -27,6 +29,7 @@ public class ShieldAPIChainableRemoteCall<
 
     private static final String RATE_EXCEEDED_MSG = "rate exceeded";
     private static final int RATE_EXCEEDED_DELAY_SEC = 5;
+    private static final int JITTER_SECONDS = 2;
     public final String resourceType;
     public final String handlerName;
 
@@ -67,7 +70,8 @@ public class ShieldAPIChainableRemoteCall<
         ReturnT invoke(
             ProxyClient<ClientT> client,
             ModelT model,
-            CallbackT context);
+            CallbackT context
+        );
     }
 
     private String getCallGraph() {
@@ -75,6 +79,11 @@ public class ShieldAPIChainableRemoteCall<
     }
 
     private ResponseT makeServiceCall(RequestT request, ProxyClient<ShieldClient> proxyClient) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(JITTER_SECONDS * 1000));
+        } catch (InterruptedException ignored) {
+        }
+
         return proxy.injectCredentialsAndInvokeV2(request, getRequestFunction.apply(proxyClient.client()));
     }
 
@@ -87,7 +96,8 @@ public class ShieldAPIChainableRemoteCall<
         Exception e,
         ProxyClient<ShieldClient> client,
         ResourceModelT model,
-        CallbackContextT context) {
+        CallbackContextT context
+    ) {
         final String callGraph = this.getCallGraph();
         if (isRateExceededException(e)) {
             logger.log(String.format("[WARN] Rate exceeded while requesting %s: %s", callGraph, e.toString()));
@@ -105,7 +115,8 @@ public class ShieldAPIChainableRemoteCall<
             model,
             context,
             ExceptionConverter.convertToErrorCode((RuntimeException) e),
-            e.getMessage());
+            e.getMessage()
+        );
     }
 
     private Boolean onStabilize(
@@ -113,7 +124,8 @@ public class ShieldAPIChainableRemoteCall<
         final ResponseT response,
         final ProxyClient<ShieldClient> proxyClient,
         final ResourceModelT resourceModel,
-        final CallbackContextT callbackContext) {
+        final CallbackContextT callbackContext
+    ) {
         final String callGraph = this.getCallGraph();
         logger.log(String.format("[INFO] Stabilizing Requesting %s", callGraph));
         if (this.stabilize != null) {
@@ -139,15 +151,18 @@ public class ShieldAPIChainableRemoteCall<
         final ResponseT response,
         final ProxyClient<ShieldClient> proxyClient,
         final ResourceModelT resourceModel,
-        final CallbackContextT callbackContext) {
+        final CallbackContextT callbackContext
+    ) {
         final String callGraph = this.getCallGraph();
         logger.log(String.format("[INFO] Completed Requesting %s", callGraph));
         if (this.onSuccess != null) {
-            ProgressEvent<ResourceModelT, CallbackContextT> results = this.onSuccess.invoke(request,
+            ProgressEvent<ResourceModelT, CallbackContextT> results = this.onSuccess.invoke(
+                request,
                 response,
                 proxyClient,
                 resourceModel,
-                callbackContext);
+                callbackContext
+            );
             if (results != null) {
                 return results;
             }
@@ -162,7 +177,8 @@ public class ShieldAPIChainableRemoteCall<
                 callGraph,
                 proxyClient,
                 model,
-                context)
+                context
+            )
             .translateToServiceRequest(this.translateToServiceRequest)
             .makeServiceCall(this::makeServiceCall)
             .handleError(this::handleError)
