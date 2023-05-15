@@ -1,5 +1,6 @@
 package software.amazon.shield.drtaccess;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,8 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Credentials;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -19,6 +22,7 @@ import software.amazon.shield.drtaccess.helper.DrtAccessTestBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.withSettings;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,7 +44,9 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
 
     @BeforeEach
     public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
+        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+            new Credentials("accessKey", "secretKey", "token"),
+            () -> Duration.ofSeconds(600).toMillis()));
         logger = mock(Logger.class, withSettings().verboseLogging());
         prevStateResourceModel = getTestResourceModel();
         updateHandler = new UpdateHandler(mock(ShieldClient.class));
@@ -63,7 +69,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -93,7 +99,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtRole(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -120,7 +126,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, null, logger);
+            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -144,7 +150,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
             .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-            updateHandler.handleRequest(proxy, request, null, logger);
+            updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
@@ -163,7 +169,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
             .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-            updateHandler.handleRequest(proxy, request, null, logger);
+            updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);

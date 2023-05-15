@@ -158,7 +158,8 @@ public class ShieldAPIChainableRemoteCall<
     public ProgressEvent<ResourceModelT, CallbackContextT> initiate() {
         final String callGraph = this.getCallGraph();
         logger.log(String.format("[INFO] Start Requesting %s", callGraph));
-        ProgressEvent<ResourceModelT, CallbackContextT> progress = this.proxy.initiate(callGraph,
+        ProgressEvent<ResourceModelT, CallbackContextT> progress = this.proxy.initiate(
+                callGraph,
                 proxyClient,
                 model,
                 context)

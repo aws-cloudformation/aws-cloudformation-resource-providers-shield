@@ -1,5 +1,8 @@
 package software.amazon.shield.drtaccess.helper;
 
+import java.util.Arrays;
+import java.util.List;
+
 import software.amazon.awssdk.services.shield.model.AssociateDrtLogBucketRequest;
 import software.amazon.awssdk.services.shield.model.AssociateDrtLogBucketResponse;
 import software.amazon.awssdk.services.shield.model.AssociateDrtRoleRequest;
@@ -10,9 +13,6 @@ import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleRequest;
 import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.shield.drtaccess.ResourceModel;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;

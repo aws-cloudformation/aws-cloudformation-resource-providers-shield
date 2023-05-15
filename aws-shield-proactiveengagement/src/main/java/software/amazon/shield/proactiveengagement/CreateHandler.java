@@ -37,10 +37,10 @@ public class CreateHandler extends BaseHandlerStd {
         final ProxyClient<ShieldClient> proxyClient,
         final Logger logger) {
 
-        final ResourceModel model = request.getDesiredResourceState();
         logger.log(String.format("CreateHandler: ProactiveEngagement AccountID = %s, ClientToken = %s",
             request.getAwsAccountId(),
             request.getClientRequestToken()));
+        final ResourceModel model = request.getDesiredResourceState();
         model.setAccountId(request.getAwsAccountId());
 
         return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeSubscriptionRequest,

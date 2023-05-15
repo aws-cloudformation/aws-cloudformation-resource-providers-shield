@@ -10,8 +10,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.AssociateDrtRoleRequest;
-import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -19,16 +17,15 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.drtaccess.helper.HandlerHelper;
 
 @RequiredArgsConstructor
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public UpdateHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
@@ -36,14 +33,19 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final Logger logger) {
+        final Logger logger
+    ) {
+        logger.log(String.format(
+            "UpdateHandler: DRTAccess AccountID = %s, ClientToken = %s",
+            request.getAwsAccountId(),
+            request.getClientRequestToken()
+        ));
 
-        logger.log("Starting to handle update request.");
         final ResourceModel desiredState = request.getDesiredResourceState();
         final ResourceModel currentState = request.getPreviousResourceState();
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
-            logger.log("[Error] - Failed to handle update request due to account ID not found.");
+            logger.log("[Error] UpdateHandler: Failed due to account ID not found.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
                 .errorCode(HandlerErrorCode.NotFound)
@@ -57,84 +59,122 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .message(HandlerHelper.EMPTY_DRTACCESS_REQUEST)
                 .build();
         }
-
-        try {
-            if (!HandlerHelper.isDrtAccessConfigured(
-                desiredState.getRoleArn(),
-                desiredState.getLogBucketList()
-            )) {
-                logger.log("[Error] - Failed to handle update request due to account not having DRT role associated.");
-                return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .status(OperationStatus.FAILED)
-                    .errorCode(HandlerErrorCode.NotFound)
-                    .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
-                    .build();
-            }
-
-            // update logBucketList
-            logger.log("Starting to update DRT log bucket list.");
-            ImmutableList<String> oldLogBucketList =
-                ImmutableList.copyOf(Optional.ofNullable(currentState.getLogBucketList())
-                    .orElse(Collections.emptyList()));
-            ImmutableList<String> newLogBucketList =
-                ImmutableList.copyOf(Optional.ofNullable(desiredState.getLogBucketList())
-                    .orElse(Collections.emptyList()));
-            updateLogBucketList(proxy, oldLogBucketList, newLogBucketList, logger);
-            logger.log("Succeed updating DRT log bucket list.");
-
-            // update roleArn
-            logger.log("Starting to update DRT access role.");
-            updateDrtAccessRole(desiredState.getRoleArn(), currentState.getRoleArn(), proxy, logger);
-            logger.log("Succeed updating DRT access role.");
-
-            logger.log("Succeed handled update request.");
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModel(desiredState)
-                .status(OperationStatus.SUCCESS)
-                .build();
-        } catch (RuntimeException e) {
-            logger.log("[Error] - Update DRTAccess failed: " + e);
+        if (!HandlerHelper.isDrtAccessConfigured(
+            desiredState.getRoleArn(),
+            desiredState.getLogBucketList()
+        )) {
+            logger.log("[Error] UpdateHandler: Failed due to DRTAccess not configured.");
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                 .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
+                .errorCode(HandlerErrorCode.NotFound)
+                .message(HandlerHelper.NO_DRTACCESS_ERROR_MSG)
                 .build();
         }
+
+        return ProgressEvent.progress(desiredState, callbackContext)
+            .then(progress -> {
+                // update logBucketList
+                ImmutableList<String> oldLogBucketList =
+                    ImmutableList.copyOf(Optional.ofNullable(currentState.getLogBucketList())
+                        .orElse(Collections.emptyList()));
+                ImmutableList<String> newLogBucketList =
+                    ImmutableList.copyOf(Optional.ofNullable(desiredState.getLogBucketList())
+                        .orElse(Collections.emptyList()));
+                return updateLogBucketList(
+                    proxy,
+                    progress.getResourceModel(),
+                    oldLogBucketList,
+                    newLogBucketList,
+                    progress.getCallbackContext(),
+                    logger
+                );
+            })
+            .then(progress -> {
+                // update roleArn
+                return updateDrtAccessRole(
+                    proxy,
+                    progress.getResourceModel(),
+                    desiredState.getRoleArn(),
+                    currentState.getRoleArn(),
+                    progress.getCallbackContext(),
+                    logger
+                );
+
+            })
+            .then(progress -> ProgressEvent.<ResourceModel, CallbackContext>builder()
+                .resourceModel(desiredState)
+                .status(OperationStatus.SUCCESS)
+                .build()
+            );
     }
 
-    private void updateLogBucketList(
+    private ProgressEvent<ResourceModel, CallbackContext> updateLogBucketList(
         final AmazonWebServicesClientProxy proxy,
+        final ResourceModel model,
         @NonNull ImmutableList<String> oldList,
         @NonNull ImmutableList<String> newList,
-        Logger logger) {
+        final CallbackContext context,
+        Logger logger
+    ) {
         List<String> removeList = new ArrayList<>(oldList);
         List<String> addList = new ArrayList<>(newList);
         removeList.removeAll(newList);
         addList.removeAll(oldList);
 
-        // remove deleted list
-        HandlerHelper.disassociateDrtLogBucketList(proxy, client, removeList, logger);
-        // add new list
-        HandlerHelper.associateDrtLogBucketList(proxy, client, addList, logger);
+        return HandlerHelper.disassociateDrtLogBucketList(
+            "DeleteHandler",
+            proxy,
+            proxy.newProxy(() -> shieldClient),
+            model,
+            removeList,
+            context,
+            logger
+        ).then(progress -> HandlerHelper.associateDrtLogBucketList(
+            "DeleteHandler",
+            proxy,
+            proxy.newProxy(() -> shieldClient),
+            progress.getResourceModel(),
+            addList,
+            progress.getCallbackContext(),
+            logger
+        ));
     }
 
-    private void updateDrtAccessRole(
+    private ProgressEvent<ResourceModel, CallbackContext> updateDrtAccessRole(
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceModel model,
         @Nullable final String desiredRole,
         @Nullable final String currentRole,
-        @NonNull final AmazonWebServicesClientProxy proxy,
+        final CallbackContext context,
         @NonNull final Logger logger
     ) {
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
         if (desiredRole != null && !desiredRole.isEmpty()) {
-            // case 1. update associated role: the API replaces existing config, no need to call disassociate separately.
+            // case 1. update associated role: the API replaces existing config, no need to call disassociate
+            // separately.
             // case 2. associate new role
-            proxy.injectCredentialsAndInvokeV2(AssociateDrtRoleRequest.builder().roleArn(desiredRole).build(),
-                client::associateDRTRole);
+            ret = ret.then(progress -> HandlerHelper.associateDrtRole(
+                "DeleteHandler",
+                proxy,
+                proxy.newProxy(() -> shieldClient),
+                progress.getResourceModel(),
+                desiredRole,
+                progress.getCallbackContext(),
+                logger
+            ));
         } else {
             // case 3. disassociate existing role
             if (currentRole != null && !currentRole.isEmpty()) {
-                proxy.injectCredentialsAndInvokeV2(DisassociateDrtRoleRequest.builder().build(),
-                    client::disassociateDRTRole);
+                ret = ret.then(progress -> HandlerHelper.disassociateDrtRole(
+                    "DeleteHandler",
+                    proxy,
+                    proxy.newProxy(() -> shieldClient),
+                    progress.getResourceModel(),
+                    progress.getCallbackContext(),
+                    logger
+                ));
             }
         }
+        return ret;
     }
 }

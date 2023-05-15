@@ -1,26 +1,24 @@
 package software.amazon.shield.drtaccess;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
+import com.google.common.collect.ImmutableList;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.DescribeDrtAccessResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.drtaccess.helper.HandlerHelper;
 
 @RequiredArgsConstructor
 public class ListHandler extends BaseHandler<CallbackContext> {
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public ListHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
@@ -28,40 +26,39 @@ public class ListHandler extends BaseHandler<CallbackContext> {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final Logger logger) {
-
-        try {
-            final List<ResourceModel> models = new ArrayList<>();
-
-            final DescribeDrtAccessResponse describeDrtAccessResponse =
-                HandlerHelper.getDrtAccessDescribeResponse(proxy, client, logger);
+        final Logger logger
+    ) {
+        logger.log(String.format(
+                "ListHandler: DRTAccess AccountID = %s, ClientToken = %s",
+                request.getAwsAccountId(),
+                request.getClientRequestToken()
+            )
+        );
+        return HandlerHelper.describeDrtAccessSetContext(
+            "ListHandler",
+            proxy,
+            proxy.newProxy(() -> shieldClient),
+            request.getDesiredResourceState(),
+            callbackContext,
+            logger
+        ).then(progress -> {
             if (!HandlerHelper.isDrtAccessConfigured(
-                describeDrtAccessResponse.roleArn(),
-                describeDrtAccessResponse.logBucketList()
+                progress.getCallbackContext().getRoleArn(),
+                progress.getCallbackContext().getLogBucketList()
             )) {
                 return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                    .resourceModels(models)
+                    .resourceModels(Collections.emptyList())
                     .status(OperationStatus.SUCCESS)
                     .build();
             }
-
-            models.add(
-                ResourceModel.builder()
-                    .accountId(request.getAwsAccountId())
-                    .build()
-            );
-
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModels(models)
+                .resourceModels(ImmutableList.of(
+                    ResourceModel.builder()
+                        .accountId(request.getAwsAccountId())
+                        .build()
+                ))
                 .status(OperationStatus.SUCCESS)
                 .build();
-        } catch (RuntimeException e) {
-            logger.log("[Error] - List DRTAccess failed: " + e);
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
+        });
     }
 }

@@ -16,131 +16,220 @@ import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleRequest;
 import software.amazon.awssdk.services.shield.model.DisassociateDrtRoleResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
+import software.amazon.shield.drtaccess.CallbackContext;
 import software.amazon.shield.drtaccess.ResourceModel;
 
 public class HandlerHelper {
 
-    public static final String DRTACCESS_CONFLICT_ERROR_MSG = "Your account already has SRT role and log bucket associated.";
+    public static final String DRTACCESS_CONFLICT_ERROR_MSG = "Your account already has SRT role and log bucket " +
+        "associated.";
     public static final String NO_DRTACCESS_ERROR_MSG = "Your account doesn't have SRT role associated.";
     public static final String DRTACCESS_ACCOUNT_ID_NOT_FOUND_ERROR_MSG = "Your account ID is not found.";
 
-    public static final String EMPTY_DRTACCESS_REQUEST = "DRT Access requires least one of roleArn or logBucketList " +
-        "to be non-empty.";
+    public static final String EMPTY_DRTACCESS_REQUEST =
+        "DRT Access requires least one of roleArn or logBucketList " + "to be non-empty.";
 
     public static boolean isEmptyDrtAccessRequest(String roleArn, List<String> logBucketList) {
         return (roleArn == null || roleArn.isEmpty()) && (logBucketList == null || logBucketList.isEmpty());
     }
 
     public static boolean isDrtAccessConfigured(
-        @Nullable String roleArn,
-        @Nullable List<String> logBucketList
-    ) {
+        @Nullable String roleArn, @Nullable List<String> logBucketList) {
         return (roleArn != null && !roleArn.isEmpty()) || (logBucketList != null && !logBucketList.isEmpty());
     }
 
     public static boolean accountIdMatchesResourcePrimaryId(ResourceHandlerRequest<ResourceModel> request) {
         return request.getAwsAccountId() != null && request.getDesiredResourceState()
-            .getPrimaryIdentifier()
-            .getString("/properties/AccountId")
+            .getAccountId()
             .equals(request.getAwsAccountId());
     }
 
-    public static DescribeDrtAccessResponse getDrtAccessDescribeResponse(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
-        Logger logger) {
-        logger.log("Starting to subscribe DRT access.");
-        DescribeDrtAccessResponse describeDrtAccessResponse = proxy.injectCredentialsAndInvokeV2(
-            DescribeDrtAccessRequest.builder().build(), client::describeDRTAccess);
-        logger.log("Succeed subscribing DRT access.");
-        return describeDrtAccessResponse;
+    public static ProgressEvent<ResourceModel, CallbackContext> describeDrtAccessSetContext(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeDrtAccessRequest,
+                DescribeDrtAccessResponse>builder()
+            .resourceType("DRTAccess")
+            .handlerName(handlerName)
+            .apiName("describeDRTAccess")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(context)
+            .logger(logger)
+            .translateToServiceRequest(m -> DescribeDrtAccessRequest.builder().build())
+            .getRequestFunction(c -> c::describeDRTAccess)
+            .onSuccess((req, res, c, m, ctx) -> {
+                ctx.setRoleArn(res.roleArn());
+                ctx.setLogBucketList(res.logBucketList());
+                return null;
+            })
+            .build()
+            .initiate();
     }
 
-    public static DisassociateDrtLogBucketResponse disassociateDrtLogBucket(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
+    public static ProgressEvent<ResourceModel, CallbackContext> disassociateDrtLogBucket(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
         String logBucket,
-        Logger logger) {
-        logger.log("Starting to disassociate DRT log bucket " + logBucket);
-        DisassociateDrtLogBucketRequest disassociateDrtLogBucketRequest = DisassociateDrtLogBucketRequest.builder()
-            .logBucket(logBucket)
-            .build();
-        DisassociateDrtLogBucketResponse disassociateDrtLogBucketResponse = proxy.injectCredentialsAndInvokeV2(
-            disassociateDrtLogBucketRequest, client::disassociateDRTLogBucket
-        );
-        logger.log("Succeed disassociating DRT log bucket " + logBucket);
-        return disassociateDrtLogBucketResponse;
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DisassociateDrtLogBucketRequest,
+                DisassociateDrtLogBucketResponse>builder()
+            .resourceType("DRTAccess")
+            .handlerName(handlerName)
+            .apiName("disassociateDRTLogBucket")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(context)
+            .logger(logger)
+            .translateToServiceRequest(m -> DisassociateDrtLogBucketRequest.builder().logBucket(logBucket).build())
+            .getRequestFunction(c -> c::disassociateDRTLogBucket)
+            .build()
+            .initiate();
     }
 
-    public static void disassociateDrtLogBucketList(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
+    public static ProgressEvent<ResourceModel, CallbackContext> disassociateDrtLogBucketList(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
         List<String> logBucketList,
-        Logger logger) {
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
         if (logBucketList == null || logBucketList.isEmpty()) {
-            return;
+            return ret;
         }
-        logger.log("Starting to disassociate DRT log bucket list with size ." + logBucketList.size());
-        logBucketList.forEach(logBucket -> disassociateDrtLogBucket(proxy, client, logBucket, logger));
-        logger.log("Succeed disassociating DRT log bucket list.");
+        for (String logBucket : logBucketList) {
+            ret = ret.then(progress -> disassociateDrtLogBucket(
+                handlerName,
+                proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                logBucket,
+                progress.getCallbackContext(),
+                logger
+            ));
+        }
+        return ret;
     }
 
-    public static DisassociateDrtRoleResponse disassociateDrtRole(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
-        Logger logger) {
-        logger.log("Starting to disassociate DRT role");
-        DisassociateDrtRoleRequest disassociateDrtRoleRequest = DisassociateDrtRoleRequest.builder().build();
-        DisassociateDrtRoleResponse disassociateDrtRoleResponse = proxy.injectCredentialsAndInvokeV2(
-            disassociateDrtRoleRequest, client::disassociateDRTRole
-        );
-        logger.log("Succeed disassociating DRT role");
-        return disassociateDrtRoleResponse;
-    }
-
-    public static void associateDrtLogBucketList(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
+    public static ProgressEvent<ResourceModel, CallbackContext> associateDrtLogBucketList(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
         List<String> logBucketList,
-        Logger logger) {
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
         if (logBucketList == null || logBucketList.isEmpty()) {
-            return;
+            return ret;
         }
-        logger.log("Starting to associate DRT log bucket list with size ." + logBucketList.size());
-        logBucketList.forEach(logBucket -> associateDrtLogBucket(proxy, client, logBucket, logger));
-        logger.log("Succeed associating DRT log bucket list.");
+        for (String logBucket : logBucketList) {
+            ret = ret.then(progress -> associateDrtLogBucket(
+                handlerName,
+                proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                logBucket,
+                progress.getCallbackContext(),
+                logger
+            ));
+        }
+        return ret;
     }
 
-    public static AssociateDrtLogBucketResponse associateDrtLogBucket(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
+    public static ProgressEvent<ResourceModel, CallbackContext> associateDrtLogBucket(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
         String logBucket,
-        Logger logger) {
-        logger.log("Starting to associate DRT log bucket " + logBucket);
-        AssociateDrtLogBucketRequest associateDrtLogBucketRequest = AssociateDrtLogBucketRequest.builder()
-            .logBucket(logBucket)
-            .build();
-        AssociateDrtLogBucketResponse associateDrtLogBucketResponse = proxy.injectCredentialsAndInvokeV2(
-            associateDrtLogBucketRequest, client::associateDRTLogBucket);
-        logger.log("Succeed associating DRT log bucket " + logBucket);
-        return associateDrtLogBucketResponse;
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, AssociateDrtLogBucketRequest,
+                AssociateDrtLogBucketResponse>builder()
+            .resourceType("DRTAccess")
+            .handlerName(handlerName)
+            .apiName("associateDRTLogBucket")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(context)
+            .logger(logger)
+            .translateToServiceRequest(m -> AssociateDrtLogBucketRequest.builder().logBucket(logBucket).build())
+            .getRequestFunction(c -> c::associateDRTLogBucket)
+            .build()
+            .initiate();
     }
 
-    public static void associateDrtRole(
-        AmazonWebServicesClientProxy proxy,
-        ShieldClient client,
+    public static ProgressEvent<ResourceModel, CallbackContext> associateDrtRole(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
         String roleArn,
-        Logger logger) {
+        final CallbackContext context,
+        final Logger logger
+    ) {
         if (roleArn == null || roleArn.isEmpty()) {
-            return;
+            return ProgressEvent.progress(model, context);
         }
-        logger.log("Starting to associate DRT role " + roleArn);
-        AssociateDrtRoleRequest associateDrtRoleRequest = AssociateDrtRoleRequest.builder()
-            .roleArn(roleArn)
-            .build();
-        AssociateDrtRoleResponse associateDrtRoleResponse = proxy.injectCredentialsAndInvokeV2(
-            associateDrtRoleRequest, client::associateDRTRole);
-        logger.log("Succeed associating DRT role " + roleArn);
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, AssociateDrtRoleRequest,
+                AssociateDrtRoleResponse>builder()
+            .resourceType("DRTAccess")
+            .handlerName(handlerName)
+            .apiName("associateDRTRole")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(context)
+            .logger(logger)
+            .translateToServiceRequest(m -> AssociateDrtRoleRequest.builder().roleArn(roleArn).build())
+            .getRequestFunction(c -> c::associateDRTRole)
+            .build()
+            .initiate();
+    }
+
+    public static ProgressEvent<ResourceModel, CallbackContext> disassociateDrtRole(
+        final String handlerName,
+        final AmazonWebServicesClientProxy proxy,
+        final ProxyClient<ShieldClient> proxyClient,
+        final ResourceModel model,
+        final CallbackContext context,
+        final Logger logger
+    ) {
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DisassociateDrtRoleRequest,
+                DisassociateDrtRoleResponse>builder()
+            .resourceType("DRTAccess")
+            .handlerName(handlerName)
+            .apiName("disassociateDRTRole")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(context)
+            .logger(logger)
+            .translateToServiceRequest(m -> DisassociateDrtRoleRequest.builder().build())
+            .getRequestFunction(c -> c::disassociateDRTRole)
+            .build()
+            .initiate();
     }
 }
