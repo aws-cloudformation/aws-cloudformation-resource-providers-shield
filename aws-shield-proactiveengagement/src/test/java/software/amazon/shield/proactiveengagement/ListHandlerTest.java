@@ -22,6 +22,7 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +62,7 @@ public class ListHandlerTest {
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
         model = ResourceModel.builder().accountId(ProactiveEngagementTestHelper.accountId).build();
+        ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
     @Test

@@ -17,6 +17,7 @@ import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.drtaccess.helper.DrtAccessTestBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +47,7 @@ public class ListHandlerTest extends DrtAccessTestBase {
         logger = mock(Logger.class);
         listHandler = new ListHandler(mock(ShieldClient.class));
         resourceModel = getTestResourceModel();
+        ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
     @Test

@@ -15,6 +15,7 @@ import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.protectiongroup.helper.ProtectionGroupTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,7 @@ public class DeleteHandlerTest {
 
         this.deleteHandler = new DeleteHandler(mock(ShieldClient.class));
         this.resourceModel = ProtectionGroupTestData.RESOURCE_MODEL;
+        ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
     @Test

@@ -29,7 +29,7 @@ public class ShieldAPIChainableRemoteCall<
 
     private static final String RATE_EXCEEDED_MSG = "rate exceeded";
     private static final int RATE_EXCEEDED_DELAY_SEC = 5;
-    private static final int JITTER_SECONDS = 2;
+    public static int JITTER_SECONDS = 2;
     public final String resourceType;
     public final String handlerName;
 

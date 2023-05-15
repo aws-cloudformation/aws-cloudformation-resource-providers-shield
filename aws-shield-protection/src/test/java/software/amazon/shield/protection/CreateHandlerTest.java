@@ -26,6 +26,7 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.protection.helper.ProtectionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +53,7 @@ public class CreateHandlerTest {
 
         this.createHandler = new CreateHandler(mock(ShieldClient.class));
         this.resourceModel = ProtectionTestData.RESOURCE_MODEL_1;
+        ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
     @Test

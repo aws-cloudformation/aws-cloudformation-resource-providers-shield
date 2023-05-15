@@ -25,6 +25,7 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +69,7 @@ public class DeleteHandlerTest {
             .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
             .emergencyContactList(Collections.emptyList())
             .build();
+        ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
     @Test
