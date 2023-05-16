@@ -25,7 +25,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
+        CallbackContext callbackContext,
         final Logger logger
     ) {
         logger.log(String.format(
@@ -34,6 +34,8 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                 request.getClientRequestToken()
             )
         );
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
+
         return HandlerHelper.describeDrtAccessSetContext(
             "ListHandler",
             proxy,

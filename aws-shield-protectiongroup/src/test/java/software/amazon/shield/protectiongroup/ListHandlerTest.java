@@ -66,7 +66,7 @@ public class ListHandlerTest {
                 .when(this.proxy).injectCredentialsAndInvokeV2(any(ListProtectionGroupsRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.listHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+                this.listHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

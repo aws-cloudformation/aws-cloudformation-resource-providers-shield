@@ -55,7 +55,7 @@ public class DeleteHandlerTest {
                         .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.deleteHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+                this.deleteHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

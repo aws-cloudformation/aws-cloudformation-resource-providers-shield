@@ -70,7 +70,7 @@ public class ListHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                listHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                listHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -98,7 +98,7 @@ public class ListHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                listHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                listHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

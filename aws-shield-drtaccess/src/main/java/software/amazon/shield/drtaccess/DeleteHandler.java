@@ -24,7 +24,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
+        CallbackContext callbackContext,
         final Logger logger
     ) {
         logger.log(String.format(
@@ -32,6 +32,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             request.getAwsAccountId(),
             request.getClientRequestToken()
         ));
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
         if (!HandlerHelper.accountIdMatchesResourcePrimaryId(request)) {
             logger.log("[Error] - Failed to handle delete request due to account ID not found.");

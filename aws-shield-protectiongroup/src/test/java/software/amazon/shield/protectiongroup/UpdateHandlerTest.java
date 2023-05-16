@@ -80,7 +80,7 @@ public class UpdateHandlerTest {
             .injectCredentialsAndInvokeV2(any(TagResourceRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = this.updateHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+            = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -121,7 +121,7 @@ public class UpdateHandlerTest {
             .injectCredentialsAndInvokeV2(any(UntagResourceRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = this.updateHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+            = this.updateHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

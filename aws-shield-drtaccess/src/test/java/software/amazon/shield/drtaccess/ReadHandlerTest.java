@@ -67,7 +67,7 @@ public class ReadHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                readHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                readHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -90,7 +90,7 @@ public class ReadHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                readHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                readHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
@@ -108,7 +108,7 @@ public class ReadHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                readHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                readHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);

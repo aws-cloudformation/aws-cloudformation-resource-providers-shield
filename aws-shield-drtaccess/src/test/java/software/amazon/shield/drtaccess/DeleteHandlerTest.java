@@ -65,7 +65,7 @@ public class DeleteHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = deleteHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                = deleteHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -89,7 +89,7 @@ public class DeleteHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                deleteHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                deleteHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
@@ -107,7 +107,7 @@ public class DeleteHandlerTest extends DrtAccessTestBase {
                 .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                deleteHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+                deleteHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);

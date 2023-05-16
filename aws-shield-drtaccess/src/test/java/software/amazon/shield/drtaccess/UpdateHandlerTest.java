@@ -71,7 +71,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -101,7 +101,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtRole(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -128,7 +128,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            = updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -152,7 +152,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
             .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-            updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
@@ -171,7 +171,7 @@ public class UpdateHandlerTest extends DrtAccessTestBase {
             .build();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-            updateHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            updateHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);

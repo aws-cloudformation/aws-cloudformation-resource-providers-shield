@@ -40,9 +40,11 @@ public class CreateHandlerTest extends DrtAccessTestBase {
 
     @BeforeEach
     public void setup() {
-        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+        proxy = spy(new AmazonWebServicesClientProxy(
+            new LoggerProxy(),
             new Credentials("accessKey", "secretKey", "token"),
-            () -> Duration.ofSeconds(600).toMillis()));
+            () -> Duration.ofSeconds(600).toMillis()
+        ));
         logger = mock(Logger.class, withSettings().verboseLogging());
         createHandler = new CreateHandler(mock(ShieldClient.class));
         ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
@@ -75,7 +77,7 @@ public class CreateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtLogBucket(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = createHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            = createHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -113,7 +115,7 @@ public class CreateHandlerTest extends DrtAccessTestBase {
         mockAssociateDrtRole(proxy);
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = createHandler.handleRequest(proxy, request, new CallbackContext(), logger);
+            = createHandler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -140,10 +142,12 @@ public class CreateHandlerTest extends DrtAccessTestBase {
             .nextToken("randomNextToken")
             .build();
 
-        final ProgressEvent<ResourceModel, CallbackContext> response = createHandler.handleRequest(proxy,
+        final ProgressEvent<ResourceModel, CallbackContext> response = createHandler.handleRequest(
+            proxy,
             request,
-            new CallbackContext(),
-            logger);
+            null,
+            logger
+        );
 
         assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
         assertThat(response.getMessage()).isNotNull();

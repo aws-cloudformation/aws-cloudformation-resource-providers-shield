@@ -67,7 +67,7 @@ public class CreateHandlerTest {
             .when(this.proxy).injectCredentialsAndInvokeV2(any(CreateProtectionGroupRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-            this.createHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+            this.createHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

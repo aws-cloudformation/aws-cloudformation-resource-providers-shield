@@ -82,7 +82,7 @@ public class ReadHandlerTest {
         registerListTags();
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.readHandler.handleRequest(this.proxy, request, new CallbackContext(), this.logger);
+                this.readHandler.handleRequest(this.proxy, request, null, this.logger);
 
        assertThat(response).isNotNull();
        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);

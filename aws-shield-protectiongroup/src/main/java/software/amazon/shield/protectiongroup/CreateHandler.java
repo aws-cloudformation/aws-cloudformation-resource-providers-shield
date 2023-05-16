@@ -29,7 +29,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
+        CallbackContext callbackContext,
         final Logger logger
     ) {
 
@@ -40,6 +40,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             request.getClientRequestToken()
         ));
         final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
         return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, CreateProtectionGroupRequest,
                 CreateProtectionGroupResponse>builder()

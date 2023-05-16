@@ -32,7 +32,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
+        CallbackContext callbackContext,
         final Logger logger
     ) {
         logger.log(String.format(
@@ -40,6 +40,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             request.getAwsAccountId(),
             request.getClientRequestToken()
         ));
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
         final ResourceModel desiredState = request.getDesiredResourceState();
         final ResourceModel currentState = request.getPreviousResourceState();
