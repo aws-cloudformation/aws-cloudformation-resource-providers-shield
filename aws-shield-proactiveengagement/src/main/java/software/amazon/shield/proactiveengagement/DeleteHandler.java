@@ -1,5 +1,7 @@
 package software.amazon.shield.proactiveengagement;
 
+import java.util.Collections;
+
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsRequest;
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
@@ -107,6 +109,7 @@ public class DeleteHandler extends BaseHandlerStd {
             )
             .then(progress -> HandlerHelper.updateEmergencyContactSettings(
                 "DeleteHandler",
+                Collections.emptyList(),
                 proxy,
                 proxyClient,
                 progress.getResourceModel(),

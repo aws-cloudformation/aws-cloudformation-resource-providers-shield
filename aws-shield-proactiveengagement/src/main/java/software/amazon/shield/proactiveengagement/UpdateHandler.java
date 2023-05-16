@@ -106,6 +106,7 @@ public class UpdateHandler extends BaseHandlerStd {
             ))
             .then(progress -> HandlerHelper.updateEmergencyContactSettings(
                 "UpdateHandler",
+                HandlerHelper.convertCFNEmergencyContactList(progress.getResourceModel().getEmergencyContactList()),
                 proxy,
                 proxyClient,
                 progress.getResourceModel(),

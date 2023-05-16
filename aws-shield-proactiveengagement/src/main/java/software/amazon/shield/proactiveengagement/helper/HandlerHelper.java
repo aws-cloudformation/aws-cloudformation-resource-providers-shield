@@ -108,6 +108,7 @@ public class HandlerHelper {
 
     public static ProgressEvent<ResourceModel, CallbackContext> updateEmergencyContactSettings(
         final String handlerName,
+        final List<software.amazon.awssdk.services.shield.model.EmergencyContact> emergencyContactList,
         final AmazonWebServicesClientProxy proxy,
         final ProxyClient<ShieldClient> proxyClient,
         final ResourceModel model,
@@ -125,7 +126,7 @@ public class HandlerHelper {
             .context(context)
             .logger(logger)
             .translateToServiceRequest(m -> UpdateEmergencyContactSettingsRequest.builder()
-                .emergencyContactList(HandlerHelper.convertCFNEmergencyContactList(model.getEmergencyContactList()))
+                .emergencyContactList(emergencyContactList)
                 .build())
             .getRequestFunction(c -> c::updateEmergencyContactSettings)
             .stabilize(HandlerHelper::stabilizeProactiveEngagementStatus)

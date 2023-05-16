@@ -140,6 +140,7 @@ public class CreateHandler extends BaseHandlerStd {
         return ProgressEvent.defaultInProgressHandler(context, 0, model)
             .then(progress -> HandlerHelper.updateEmergencyContactSettings(
                 "CreateHandler",
+                HandlerHelper.convertCFNEmergencyContactList(progress.getResourceModel().getEmergencyContactList()),
                 proxy,
                 proxyClient,
                 model,

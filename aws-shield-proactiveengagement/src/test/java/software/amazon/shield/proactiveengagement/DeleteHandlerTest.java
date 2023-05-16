@@ -17,6 +17,8 @@ import software.amazon.awssdk.services.shield.model.DisableProactiveEngagementRe
 import software.amazon.awssdk.services.shield.model.DisableProactiveEngagementResponse;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -30,9 +32,11 @@ import software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTest
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.withSettings;
 import static software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper.MOCK_CREDENTIALS;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,10 +61,12 @@ public class DeleteHandlerTest {
 
     @BeforeEach
     public void setup() {
-        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+        proxy = spy(new AmazonWebServicesClientProxy(
+            new LoggerProxy(),
             MOCK_CREDENTIALS,
-            () -> Duration.ofSeconds(600).toMillis()));
-        logger = mock(Logger.class);
+            () -> Duration.ofSeconds(600).toMillis()
+        ));
+        logger = mock(Logger.class, withSettings().verboseLogging());
         deleteHandler = new DeleteHandler(shieldClient);
         proxyClient = ProactiveEngagementTestHelper.MOCK_PROXY(proxy, shieldClient);
         callbackContext = new CallbackContext();
@@ -97,6 +103,17 @@ public class DeleteHandlerTest {
                 .build();
         doReturn(disableProactiveEngagementResponse).when(proxy)
             .injectCredentialsAndInvokeV2(any(DisableProactiveEngagementRequest.class), any());
+
+        // make sure updateEmergencyContactSettingsResponse called with empty list
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+            UpdateEmergencyContactSettingsResponse.builder()
+                .build();
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+            .injectCredentialsAndInvokeV2(eq(
+                UpdateEmergencyContactSettingsRequest.builder()
+                    .emergencyContactList(Collections.emptyList())
+                    .build()
+            ), any());
 
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
