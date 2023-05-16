@@ -1,5 +1,7 @@
 package software.amazon.shield.protection;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,13 +18,12 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseResponse;
-import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
-import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
 import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
-import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.Credentials;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.LoggerProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateHandlerTest {
@@ -48,7 +50,9 @@ public class CreateHandlerTest {
 
     @BeforeEach
     public void setup() {
-        this.proxy = mock(AmazonWebServicesClientProxy.class);
+        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+            new Credentials("accessKey", "secretKey", "token"),
+            () -> Duration.ofSeconds(600).toMillis()));
         this.logger = mock(Logger.class);
 
         this.createHandler = new CreateHandler(mock(ShieldClient.class));

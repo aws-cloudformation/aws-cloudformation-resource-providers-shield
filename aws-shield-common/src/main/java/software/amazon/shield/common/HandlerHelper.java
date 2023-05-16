@@ -9,82 +9,69 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListTagsForResourceRequest;
+import software.amazon.awssdk.services.shield.model.ListTagsForResourceResponse;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.services.shield.model.TagResourceRequest;
 import software.amazon.awssdk.services.shield.model.TagResourceResponse;
 import software.amazon.awssdk.services.shield.model.UntagResourceRequest;
 import software.amazon.awssdk.services.shield.model.UntagResourceResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.StdCallbackContext;
 
 public class HandlerHelper {
-    public static <T> List<T> getTags(
-        @NonNull final AmazonWebServicesClientProxy proxy,
-        @NonNull final ShieldClient client,
-        @NonNull final String resourceArn,
-        @NonNull final Function<Tag, T> converter) {
-
-        ListTagsForResourceRequest request = ListTagsForResourceRequest.builder().resourceARN(resourceArn).build();
-
-        return proxy.injectCredentialsAndInvokeV2(request, client::listTagsForResource)
-            .tags()
-            .stream()
-            .map(converter)
-            .collect(Collectors.toList());
+    public static boolean isRetriableErrorCode(HandlerErrorCode errorCode) {
+        // Type: Retriable in https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-test-contract-errors.html
+        return ImmutableList.of(
+            HandlerErrorCode.NetworkFailure,
+            HandlerErrorCode.ResourceConflict,
+            HandlerErrorCode.ServiceInternalError,
+            HandlerErrorCode.Throttling
+        ).contains(errorCode);
     }
 
-    public static <T, S> void updateTags(
-        @Nullable final List<? extends T> desiredTags,
-        Function<? super T, String> desiredTagKeyGetter,
-        Function<? super T, String> desiredTagValueGetter,
-        @Nullable final List<? extends S> currentTags,
-        Function<? super S, String> currentTagKeyGetter,
-        Function<? super S, String> currentTagValueGetter,
+    public interface TagsContext<T> {
+        List<T> getTags();
+
+        void setTags(List<T> tags);
+    }
+
+    public static <T, M, C extends StdCallbackContext & TagsContext<T>> ProgressEvent<M, C> getTagsChainable(
         @NonNull final String resourceArn,
-        @NonNull final ShieldClient shieldClient,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
+        @NonNull final Function<Tag, T> converter,
 
-        final Map<String, String> currentTagsMap = Optional.ofNullable(currentTags)
-            .orElse(Collections.emptyList())
-            .stream()
-            .collect(Collectors.toMap(currentTagKeyGetter, currentTagValueGetter));
-
-        final List<software.amazon.awssdk.services.shield.model.Tag> tagsToSet = new ArrayList<>();
-
-        Optional.ofNullable(desiredTags).orElse(Collections.emptyList()).forEach(tag -> {
-            final String desiredKey = desiredTagKeyGetter.apply(tag);
-            final String currentValueAtDesiredKey = currentTagsMap.get(desiredKey);
-            final String desiredValue = desiredTagValueGetter.apply(tag);
-            if (!(desiredValue.equals(currentValueAtDesiredKey))) {
-                tagsToSet.add(software.amazon.awssdk.services.shield.model.Tag.builder()
-                    .key(desiredKey)
-                    .value(desiredValue)
-                    .build());
-            }
-            currentTagsMap.remove(desiredKey);
-        });
-
-        final List<String> tagsToRemove = new ArrayList<>(currentTagsMap.keySet());
-
-        if (tagsToSet.size() > 0) {
-            proxy.injectCredentialsAndInvokeV2(TagResourceRequest.builder()
-                .tags(tagsToSet)
-                .resourceARN(resourceArn)
-                .build(), shieldClient::tagResource);
-        }
-
-        if (tagsToRemove.size() > 0) {
-            proxy.injectCredentialsAndInvokeV2(UntagResourceRequest.builder()
-                .tagKeys(tagsToRemove)
-                .resourceARN(resourceArn)
-                .build(), shieldClient::untagResource);
-        }
+        @NonNull final String resourceType,
+        @NonNull final String handlerName,
+        @NonNull final AmazonWebServicesClientProxy proxy,
+        @NonNull final ProxyClient<ShieldClient> proxyClient,
+        @NonNull final M model,
+        @NonNull final C callbackContext,
+        @NonNull final Logger logger
+    ) {
+        return ShieldAPIChainableRemoteCall.<M, C, ListTagsForResourceRequest, ListTagsForResourceResponse>builder()
+            .resourceType(resourceType)
+            .handlerName(handlerName)
+            .apiName("tagResource")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(model)
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> ListTagsForResourceRequest.builder().resourceARN(resourceArn).build())
+            .getRequestFunction(c -> c::listTagsForResource)
+            .onSuccess((req, res, c, m, ctx) -> {
+                ctx.setTags(res.tags().stream().map(converter).collect(Collectors.toList()));
+                return null;
+            })
+            .build()
+            .initiate();
     }
 
     public static <T, S, M, C extends StdCallbackContext> ProgressEvent<M, C> updateTagsChainable(
@@ -102,7 +89,8 @@ public class HandlerHelper {
         @NonNull final ProxyClient<ShieldClient> proxyClient,
         @NonNull final M model,
         @NonNull final C callbackContext,
-        @NonNull final Logger logger) {
+        @NonNull final Logger logger
+    ) {
         final Map<String, String> currentTagsMap = Optional.ofNullable(currentTags)
             .orElse(Collections.emptyList())
             .stream()

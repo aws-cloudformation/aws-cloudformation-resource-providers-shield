@@ -11,6 +11,7 @@ import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
@@ -29,13 +30,16 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final Logger logger) {
+        final Logger logger
+    ) {
 
         logger.log(String.format(
             "CreateHandler: AccountID = %s, ProtectionGroupId = %s, ClientToken = %s",
             request.getAwsAccountId(),
             request.getDesiredResourceState().getProtectionGroupId(),
-            request.getClientRequestToken()));
+            request.getClientRequestToken()
+        ));
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
 
         return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, CreateProtectionGroupRequest,
                 CreateProtectionGroupResponse>builder()
@@ -43,7 +47,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             .handlerName("CreateHandler")
             .apiName("createProtectionGroup")
             .proxy(proxy)
-            .proxyClient(proxy.newProxy(() -> this.shieldClient))
+            .proxyClient(proxyClient)
             .model(request.getDesiredResourceState())
             .context(callbackContext)
             .logger(logger)
@@ -75,7 +79,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             })
             .getRequestFunction(c -> c::createProtectionGroup)
             .onSuccess((req, res, c, m, ctx) -> {
-                m.setProtectionGroupArn(String.format("arn:aws:shield::%s:protection-group/%s",
+                m.setProtectionGroupArn(String.format(
+                    "arn:aws:shield::%s:protection-group/%s",
                     request.getAwsAccountId(),
                     m.getProtectionGroupId()
                 ));

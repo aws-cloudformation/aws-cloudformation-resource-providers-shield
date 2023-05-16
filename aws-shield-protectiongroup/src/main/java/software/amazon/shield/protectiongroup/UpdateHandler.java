@@ -7,6 +7,7 @@ import software.amazon.awssdk.services.shield.model.UpdateProtectionGroupRespons
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.common.HandlerHelper;
@@ -26,14 +27,20 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final Logger logger) {
+        final Logger logger
+    ) {
 
-        logger.log(String.format("UpdateHandler: ProtectionGroupArn = %s, ClientToken = %s",
+        logger.log(String.format(
+            "UpdateHandler: ProtectionGroupArn = %s, ClientToken = %s",
             request.getDesiredResourceState().getProtectionGroupArn(),
-            request.getClientRequestToken()));
-        logger.log(String.format("UpdateHandler: ProtectionGroupId = %s, ClientToken = %s",
+            request.getClientRequestToken()
+        ));
+        logger.log(String.format(
+            "UpdateHandler: ProtectionGroupId = %s, ClientToken = %s",
             HandlerHelper.protectionArnToId(request.getDesiredResourceState().getProtectionGroupArn()),
-            request.getClientRequestToken()));
+            request.getClientRequestToken()
+        ));
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
 
         return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, UpdateProtectionGroupRequest,
                 UpdateProtectionGroupResponse>builder()
@@ -41,7 +48,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             .handlerName("UpdateHandler")
             .apiName("updateProtectionGroup")
             .proxy(proxy)
-            .proxyClient(proxy.newProxy(() -> this.shieldClient))
+            .proxyClient(proxyClient)
             .model(request.getDesiredResourceState())
             .context(callbackContext)
             .logger(logger)
@@ -74,7 +81,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 "ProtectionGroup",
                 "UpdateHandler",
                 proxy,
-                proxy.newProxy(() -> this.shieldClient),
+                proxyClient,
                 progress.getResourceModel(),
                 progress.getCallbackContext(),
                 logger

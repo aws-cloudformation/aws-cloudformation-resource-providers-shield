@@ -1,5 +1,11 @@
 package software.amazon.shield.protection;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
 import software.amazon.awssdk.services.shield.model.ListProtectionsRequest;
@@ -7,62 +13,65 @@ import software.amazon.awssdk.services.shield.model.ListProtectionsResponse;
 import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
-import software.amazon.shield.common.HandlerHelper;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 
 @RequiredArgsConstructor
 public class ListHandler extends BaseHandler<CallbackContext> {
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public ListHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
-        final Logger logger) {
+        CallbackContext callbackContext,
+        final Logger logger
+    ) {
+        logger.log(String.format(
+                "ListHandler: AccountID = %s, ClientToken = %s",
+                request.getAwsAccountId(),
+                request.getClientRequestToken()
+            )
+        );
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
-        try {
-            final ListProtectionsRequest listProtectionsRequest =
-                ListProtectionsRequest.builder()
-                    .nextToken(request.getNextToken())
-                    .build();
-
-            final ListProtectionsResponse listProtectionsResponse =
-                proxy.injectCredentialsAndInvokeV2(listProtectionsRequest, this.client::listProtections);
-
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModels(transformToModels(listProtectionsResponse.protections(), proxy))
-                .status(OperationStatus.SUCCESS)
-                .build();
-
-        } catch (RuntimeException e) {
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, ListProtectionsRequest,
+                ListProtectionsResponse>builder()
+            .resourceType("Protection")
+            .handlerName("ListHandler")
+            .apiName("listProtections")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(request.getDesiredResourceState())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> ListProtectionsRequest.builder()
+                .nextToken(request.getNextToken())
+                .build())
+            .getRequestFunction(c -> c::listProtections)
+            .onSuccess((req, res, c, m, ctx) ->
+                ProgressEvent.<ResourceModel, CallbackContext>builder()
+                    .status(OperationStatus.SUCCESS)
+                    .resourceModels(transformToModels(res.protections()))
+                    .nextToken(res.nextToken())
+                    .build())
+            .build()
+            .initiate();
     }
 
     private List<ResourceModel> transformToModels(
-        final List<Protection> protections,
-        final AmazonWebServicesClientProxy proxy) {
-
+        final List<Protection> protections
+    ) {
         return Optional.ofNullable(protections)
             .map(Collection::stream)
             .orElseGet(Stream::empty)
@@ -73,16 +82,6 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                         .name(protection.name())
                         .protectionArn(protection.protectionArn())
                         .resourceArn(protection.resourceArn())
-                        .tags(
-                            HandlerHelper.getTags(
-                                proxy,
-                                this.client,
-                                protection.protectionArn(),
-                                tag ->
-                                    Tag.builder()
-                                        .key(tag.key())
-                                        .value(tag.value())
-                                        .build()))
                         .build())
             .collect(Collectors.toList());
     }

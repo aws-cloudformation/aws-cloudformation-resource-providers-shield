@@ -12,83 +12,108 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.Protection;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
 import software.amazon.shield.common.HandlerHelper;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
 
 @RequiredArgsConstructor
 public class ReadHandler extends BaseHandler<CallbackContext> {
 
     private static final String HEALTH_CHECK_ARN_TEMPLATE = "arn:aws:route53:::healthcheck/";
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public ReadHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
-        final Logger logger) {
+        CallbackContext callbackContext,
+        final Logger logger
+    ) {
+        logger.log(String.format(
+                "ReadHandler: ProtectionArn = %s, ClientToken = %s",
+                request.getDesiredResourceState().getProtectionArn(),
+                request.getClientRequestToken()
+            )
+        );
+        logger.log(String.format(
+                "ReadHandler: ProtectionId = %s, ClientToken = %s",
+                HandlerHelper.protectionArnToId(request.getDesiredResourceState().getProtectionArn()),
+                request.getClientRequestToken()
+            )
+        );
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
-        final ResourceModel model = request.getDesiredResourceState();
-        final String protectionArn = model.getProtectionArn();
-        logger.log(String.format("ReadHandler: protection arn = %s", protectionArn));
-        final String protectionId = HandlerHelper.protectionArnToId(protectionArn);
-        logger.log(String.format("ReadHandler: protection id = %s", protectionId));
-
-        try {
-            final DescribeProtectionRequest describeProtectionRequest =
-                DescribeProtectionRequest.builder()
-                    .protectionId(protectionId)
-                    .build();
-
-            final DescribeProtectionResponse describeProtectionResponse =
-                proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
-
-            return ProgressEvent.defaultSuccessHandler(
-                transformToModel(describeProtectionResponse.protection(), proxy)
+        return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, DescribeProtectionRequest,
+                DescribeProtectionResponse>builder()
+            .resourceType("Protection")
+            .handlerName("ReadHandler")
+            .apiName("describeProtection")
+            .proxy(proxy)
+            .proxyClient(proxyClient)
+            .model(request.getDesiredResourceState())
+            .context(callbackContext)
+            .logger(logger)
+            .translateToServiceRequest(m -> DescribeProtectionRequest.builder()
+                .protectionId(HandlerHelper.protectionArnToId(m.getProtectionArn()))
+                .build())
+            .getRequestFunction(c -> c::describeProtection)
+            .onSuccess((req, res, c, m, ctx) -> ProgressEvent.progress(
+                transformToModel(res.protection()),
+                ctx
+            ))
+            .build()
+            .initiate()
+            .then(progress -> {
+                final ResourceModel m = progress.getResourceModel();
+                return HandlerHelper.getTagsChainable(
+                    m.getProtectionArn(),
+                    tag ->
+                        Tag.builder()
+                            .key(tag.key())
+                            .value(tag.value())
+                            .build(),
+                    "Protection",
+                    "ReadHandler",
+                    proxy,
+                    proxyClient,
+                    m,
+                    progress.getCallbackContext(),
+                    logger
+                );
+            }).then(
+                progress -> {
+                    final ResourceModel m = progress.getResourceModel();
+                    final List<Tag> tags = progress.getCallbackContext().getTags();
+                    if (tags.size() > 0) {
+                        m.setTags(tags);
+                    }
+                    return ProgressEvent.defaultSuccessHandler(m);
+                }
             );
-        } catch (RuntimeException e) {
-            logger.log(String.format("ReadHandler: error %s", e));
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
     }
 
     private ResourceModel transformToModel(
-        @NonNull final Protection protection,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
+        @NonNull final Protection protection
+    ) {
         final List<String> healthCheckArns = protection.healthCheckIds()
             .stream()
             .map(x -> HEALTH_CHECK_ARN_TEMPLATE + x)
             .collect(Collectors.toList());
-        final List<Tag> tags = HandlerHelper.getTags(
-            proxy,
-            this.client,
-            protection.protectionArn(),
-            tag ->
-                Tag.builder()
-                    .key(tag.key())
-                    .value(tag.value())
-                    .build());
 
         return ResourceModel.builder()
             .protectionId(protection.id())
             .name(protection.name())
             .protectionArn(protection.protectionArn())
             .resourceArn(protection.resourceArn())
-            .tags(tags.size() > 0 ? tags : null)
             .healthCheckArns(healthCheckArns.size() > 0 ? healthCheckArns : null)
             .applicationLayerAutomaticResponseConfiguration(
                 translateAppLayerAutoResponseConfig(protection))

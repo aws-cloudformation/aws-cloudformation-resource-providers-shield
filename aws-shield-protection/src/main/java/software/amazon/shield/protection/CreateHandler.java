@@ -1,103 +1,196 @@
 package software.amazon.shield.protection;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.shield.ShieldClient;
-import software.amazon.awssdk.services.shield.model.AssociateHealthCheckRequest;
 import software.amazon.awssdk.services.shield.model.BlockAction;
 import software.amazon.awssdk.services.shield.model.CountAction;
 import software.amazon.awssdk.services.shield.model.CreateProtectionRequest;
 import software.amazon.awssdk.services.shield.model.CreateProtectionRequest.Builder;
 import software.amazon.awssdk.services.shield.model.CreateProtectionResponse;
 import software.amazon.awssdk.services.shield.model.DeleteProtectionRequest;
+import software.amazon.awssdk.services.shield.model.DeleteProtectionResponse;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
+import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseResponse;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
-import software.amazon.cloudformation.proxy.OperationStatus;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
-import software.amazon.shield.common.ExceptionConverter;
+import software.amazon.shield.common.HandlerHelper;
+import software.amazon.shield.common.ShieldAPIChainableRemoteCall;
+
+import static software.amazon.shield.protection.helper.HandlerHelper.associateHealthChecks;
 
 @RequiredArgsConstructor
 public class CreateHandler extends BaseHandler<CallbackContext> {
 
-    private final ShieldClient client;
+    private final ShieldClient shieldClient;
 
     public CreateHandler() {
-        this.client = CustomerAPIClientBuilder.getClient();
+        this.shieldClient = CustomerAPIClientBuilder.getClient();
     }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
-        final CallbackContext callbackContext,
-        final Logger logger) {
+        CallbackContext callbackContext,
+        final Logger logger
+    ) {
+        logger.log(String.format(
+                "CreateHandler: AccountID = %s, ClientToken = %s",
+                request.getAwsAccountId(),
+                request.getClientRequestToken()
+            )
+        );
+        callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
 
-        final ResourceModel model = request.getDesiredResourceState();
-        final String protectionId;
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
 
-        try {
-            final CreateProtectionRequest.Builder createProtectionRequest =
-                CreateProtectionRequest.builder()
-                    .name(model.getName())
-                    .resourceArn(model.getResourceArn());
+        final ProgressEvent<ResourceModel, CallbackContext> createProgress =
+            ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, CreateProtectionRequest,
+                    CreateProtectionResponse>builder()
+                .resourceType("Protection")
+                .handlerName("CreateHandler")
+                .apiName("createProtection")
+                .proxy(proxy)
+                .proxyClient(proxyClient)
+                .model(request.getDesiredResourceState())
+                .context(callbackContext)
+                .logger(logger)
+                .translateToServiceRequest(m -> {
+                    final CreateProtectionRequest.Builder createProtectionRequestBuilder =
+                        CreateProtectionRequest.builder()
+                            .name(m.getName())
+                            .resourceArn(m.getResourceArn());
+                    populateTags(m, createProtectionRequestBuilder);
+                    return createProtectionRequestBuilder.build();
+                })
+                .getRequestFunction(c -> c::createProtection)
+                .onSuccess((req, res, c, m, ctx) -> {
+                    logger.log(String.format("CreateHandler: new protection created id = %s", res.protectionId()));
+                    m.setProtectionId(res.protectionId());
+                    return null;
+                })
+                .build()
+                .initiate()
+                .then(progress -> ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
+                        DescribeProtectionRequest,
+                        DescribeProtectionResponse>builder()
+                    .resourceType("Protection")
+                    .handlerName("CreateHandler")
+                    .apiName("describeProtection")
+                    .proxy(proxy)
+                    .proxyClient(proxyClient)
+                    .model(progress.getResourceModel())
+                    .context(progress.getCallbackContext())
+                    .logger(logger)
+                    .translateToServiceRequest(m -> DescribeProtectionRequest.builder()
+                        .protectionId(m.getProtectionId())
+                        .build())
+                    .getRequestFunction(c -> c::describeProtection)
+                    .onSuccess((req, res, c, m, ctx) -> {
+                        final String protectionArn = res.protection().protectionArn();
+                        logger.log(String.format("CreateHandler: new protection created arn = %s", protectionArn));
+                        m.setProtectionArn(protectionArn);
+                        return null;
+                    })
+                    .build()
+                    .initiate())
+                .then(progress -> associateHealthChecks(
+                    "CreateHandler",
+                    progress.getResourceModel().getProtectionId(),
+                    progress.getResourceModel().getHealthCheckArns(),
+                    proxy,
+                    proxyClient,
+                    progress.getResourceModel(),
+                    progress.getCallbackContext(),
+                    logger
+                ))
+                .then(progress -> {
+                    final ResourceModel model = progress.getResourceModel();
+                    final ApplicationLayerAutomaticResponseConfiguration appLayerAutoResponseConfig =
+                        model.getApplicationLayerAutomaticResponseConfiguration();
 
-            populateTags(model, createProtectionRequest);
+                    if (appLayerAutoResponseConfig == null
+                        || appLayerAutoResponseConfig.getStatus().equals("DISABLED")) {
+                        return progress;
+                    }
 
-            final CreateProtectionResponse createProtectionResponse =
-                proxy.injectCredentialsAndInvokeV2(createProtectionRequest.build(), this.client::createProtection);
-            protectionId = createProtectionResponse.protectionId();
-            logger.log(String.format("CreateHandler: new protection created id = %s", protectionId));
-            model.setProtectionId(protectionId);
-        } catch (RuntimeException e) {
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
+                    return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
+                            EnableApplicationLayerAutomaticResponseRequest,
+                            EnableApplicationLayerAutomaticResponseResponse>builder()
+                        .resourceType("Protection")
+                        .handlerName("CreateHandler")
+                        .apiName("enableApplicationLayerAutomaticResponse")
+                        .proxy(proxy)
+                        .proxyClient(proxyClient)
+                        .model(model)
+                        .context(progress.getCallbackContext())
+                        .logger(logger)
+                        .translateToServiceRequest(m -> {
+                            if (m.getApplicationLayerAutomaticResponseConfiguration().getAction().getBlock() != null) {
+                                return EnableApplicationLayerAutomaticResponseRequest.builder()
+                                    .resourceArn(m.getResourceArn())
+                                    .action(
+                                        ResponseAction.builder()
+                                            .block(BlockAction.builder().build())
+                                            .build())
+                                    .build();
+                            } else {
+                                return EnableApplicationLayerAutomaticResponseRequest.builder()
+                                    .resourceArn(m.getResourceArn())
+                                    .action(
+                                        ResponseAction.builder()
+                                            .count(CountAction.builder().build())
+                                            .build())
+                                    .build();
+                            }
+                        })
+                        .getRequestFunction(c -> c::enableApplicationLayerAutomaticResponse)
+                        .onSuccess((req, res, c, m, ctx) -> ProgressEvent.defaultSuccessHandler(m))
+                        .build()
+                        .initiate();
+                });
+
+        if (
+            createProgress.isFailed()
+                && !HandlerHelper.isRetriableErrorCode(createProgress.getErrorCode())
+                && createProgress.getResourceModel().getProtectionId() != null
+        ) {
+            return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
+                    DeleteProtectionRequest,
+                    DeleteProtectionResponse>builder()
+                .resourceType("Protection")
+                .handlerName("CreateHandler")
+                .apiName("deleteProtection")
+                .proxy(proxy)
+                .proxyClient(proxyClient)
+                .model(createProgress.getResourceModel())
+                .context(createProgress.getCallbackContext())
+                .logger(logger)
+                .translateToServiceRequest(m -> DeleteProtectionRequest.builder()
+                    .protectionId(m.getProtectionId())
+                    .build())
+                .getRequestFunction(c -> c::deleteProtection)
+                .onSuccess((req, res, c, m, ctx) -> ProgressEvent.failed(
+                    m,
+                    ctx,
+                    createProgress.getErrorCode(),
+                    createProgress.getMessage()
+                ))
+                .build()
+                .initiate();
         }
-
-        try {
-            final DescribeProtectionRequest describeProtectionRequest =
-                DescribeProtectionRequest.builder()
-                    .protectionId(protectionId)
-                    .build();
-
-            final DescribeProtectionResponse describeProtectionResponse =
-                proxy.injectCredentialsAndInvokeV2(describeProtectionRequest, this.client::describeProtection);
-
-            final String protectionArn = describeProtectionResponse.protection().protectionArn();
-            logger.log(String.format("CreateHandler: new protection created arn = %s", protectionArn));
-            model.setProtectionArn(protectionArn);
-
-            associateHealthChecks(model.getHealthCheckArns(), protectionId, proxy);
-            enableApplicationLayerAutomaticResponse(
-                model.getApplicationLayerAutomaticResponseConfiguration(),
-                model.getResourceArn(),
-                proxy);
-
-            return ProgressEvent.defaultSuccessHandler(model);
-        } catch (RuntimeException e) {
-            proxy.injectCredentialsAndInvokeV2(
-                DeleteProtectionRequest.builder().protectionId(protectionId).build(),
-                this.client::deleteProtection
-            );
-            return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.FAILED)
-                .errorCode(ExceptionConverter.convertToErrorCode(e))
-                .message(e.getMessage())
-                .build();
-        }
+        return createProgress;
     }
 
     private static void populateTags(final ResourceModel model, final Builder createProtectionRequest) {
@@ -114,76 +207,5 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     .collect(Collectors.toList())
             );
         }
-    }
-
-    private void associateHealthChecks(
-        final List<String> healthCheckArns,
-        @NonNull final String protectionId,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
-            return;
-        }
-
-        healthCheckArns.forEach(
-            arn -> {
-                final AssociateHealthCheckRequest associateHealthCheckRequest =
-                    AssociateHealthCheckRequest.builder()
-                        .protectionId(protectionId)
-                        .healthCheckArn(arn)
-                        .build();
-
-                proxy.injectCredentialsAndInvokeV2(
-                    associateHealthCheckRequest,
-                    this.client::associateHealthCheck);
-            }
-        );
-    }
-
-    private void enableApplicationLayerAutomaticResponse(
-        final ApplicationLayerAutomaticResponseConfiguration appLayerAutoResponseConfig,
-        @NonNull final String resourceArn,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        if (appLayerAutoResponseConfig == null
-            || appLayerAutoResponseConfig.getStatus().equals("DISABLED")) {
-            return;
-        }
-
-        if (appLayerAutoResponseConfig.getAction().getBlock() != null) {
-            enableAppLayerAutoResponseWithBlockAction(resourceArn, proxy);
-        } else {
-            enableAppLayerAutoResponseWithCountAction(resourceArn, proxy);
-        }
-    }
-
-    private void enableAppLayerAutoResponseWithBlockAction(
-        @NonNull final String resourceArn,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        proxy.injectCredentialsAndInvokeV2(
-            EnableApplicationLayerAutomaticResponseRequest.builder()
-                .resourceArn(resourceArn)
-                .action(
-                    ResponseAction.builder()
-                        .block(BlockAction.builder().build())
-                        .build())
-                .build(),
-            this.client::enableApplicationLayerAutomaticResponse);
-    }
-
-    private void enableAppLayerAutoResponseWithCountAction(
-        @NonNull final String resourceArn,
-        @NonNull final AmazonWebServicesClientProxy proxy) {
-
-        proxy.injectCredentialsAndInvokeV2(
-            EnableApplicationLayerAutomaticResponseRequest.builder()
-                .resourceArn(resourceArn)
-                .action(
-                    ResponseAction.builder()
-                        .count(CountAction.builder().build())
-                        .build())
-                .build(),
-            this.client::enableApplicationLayerAutomaticResponse);
     }
 }
