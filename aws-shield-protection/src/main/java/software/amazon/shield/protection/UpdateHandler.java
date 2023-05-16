@@ -68,7 +68,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         return updateHealthCheckAssociation(
             desiredState.getHealthCheckArns(),
             currentState.getHealthCheckArns(),
-            HandlerHelper.protectionArnToId(desiredState.getProtectionId()),
+            HandlerHelper.protectionArnToId(desiredState.getProtectionArn()),
             proxy,
             proxyClient,
             desiredState,
@@ -183,14 +183,14 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         // case 1: state unchanged
         // case 1.1: remain disabled
         if (desiredStatus.equals("DISABLED") && currentStatus.equals("DISABLED")) {
-            return ProgressEvent.progress(model, context);
+            return ProgressEvent.defaultInProgressHandler(context, 0, model);
         }
         // case 1.2: remain enabled (however the action may have changed)
         else if (
             desiredStatus.equals("ENABLED") && currentStatus.equals("ENABLED")
         ) {
             if (desiredActionIsBlock == currentActionIsBlock) {
-                return ProgressEvent.progress(model, context);
+                return ProgressEvent.defaultInProgressHandler(context, 0, model);
             }
 
             return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,

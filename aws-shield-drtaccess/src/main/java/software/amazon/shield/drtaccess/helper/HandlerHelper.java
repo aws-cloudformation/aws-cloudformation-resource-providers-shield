@@ -111,7 +111,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
-        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (logBucketList == null || logBucketList.isEmpty()) {
             return ret;
         }
@@ -138,7 +138,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
-        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (logBucketList == null || logBucketList.isEmpty()) {
             return ret;
         }
@@ -191,7 +191,7 @@ public class HandlerHelper {
         final Logger logger
     ) {
         if (roleArn == null || roleArn.isEmpty()) {
-            return ProgressEvent.progress(model, context);
+            return ProgressEvent.defaultInProgressHandler(context, 0, model);
         }
         return ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext, AssociateDrtRoleRequest,
                 AssociateDrtRoleResponse>builder()

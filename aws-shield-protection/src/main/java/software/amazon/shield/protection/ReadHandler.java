@@ -66,9 +66,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                 .protectionId(HandlerHelper.protectionArnToId(m.getProtectionArn()))
                 .build())
             .getRequestFunction(c -> c::describeProtection)
-            .onSuccess((req, res, c, m, ctx) -> ProgressEvent.progress(
-                transformToModel(res.protection()),
-                ctx
+            .onSuccess((req, res, c, m, ctx) -> ProgressEvent.defaultInProgressHandler(
+                ctx,
+                0,
+                transformToModel(res.protection())
             ))
             .build()
             .initiate()

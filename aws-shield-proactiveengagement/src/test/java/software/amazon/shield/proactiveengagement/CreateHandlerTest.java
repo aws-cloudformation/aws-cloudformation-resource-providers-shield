@@ -101,7 +101,7 @@ public class CreateHandlerTest {
 
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
-            ProgressEvent.progress(model, callbackContext);
+            ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
 
         model = ResourceModel.builder()
             .accountId(ProactiveEngagementTestHelper.accountId)

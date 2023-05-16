@@ -113,7 +113,7 @@ public class HandlerHelper {
 
         final List<String> tagsToRemove = new ArrayList<>(currentTagsMap.keySet());
 
-        ProgressEvent<M, C> ret = ProgressEvent.progress(model, callbackContext);
+        ProgressEvent<M, C> ret = ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
 
         if (tagsToSet.size() > 0) {
             ret =

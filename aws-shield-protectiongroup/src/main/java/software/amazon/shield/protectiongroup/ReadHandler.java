@@ -73,7 +73,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
                 if (null != res.protectionGroup().resourceType()) {
                     result.setResourceType(res.protectionGroup().resourceTypeAsString());
                 }
-                return ProgressEvent.progress(result, ctx);
+                return ProgressEvent.defaultInProgressHandler(ctx, 0, result);
             })
             .build()
             .initiate()

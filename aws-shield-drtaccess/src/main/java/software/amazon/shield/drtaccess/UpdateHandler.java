@@ -72,7 +72,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .build();
         }
 
-        return ProgressEvent.progress(desiredState, callbackContext)
+        return ProgressEvent.defaultInProgressHandler(callbackContext, 0, desiredState)
             .then(progress -> {
                 // update logBucketList
                 ImmutableList<String> oldLogBucketList =
@@ -149,7 +149,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final CallbackContext context,
         @NonNull final Logger logger
     ) {
-        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (desiredRole != null && !desiredRole.isEmpty()) {
             // case 1. update associated role: the API replaces existing config, no need to call disassociate
             // separately.

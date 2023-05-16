@@ -100,7 +100,7 @@ public class DeleteHandlerTest {
 
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
-            ProgressEvent.progress(model, callbackContext);
+            ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
             .awsAccountId(ProactiveEngagementTestHelper.accountId)

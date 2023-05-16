@@ -137,7 +137,7 @@ public class CreateHandler extends BaseHandlerStd {
         final ResourceModel model,
         final CallbackContext context,
         final Logger logger) {
-        return ProgressEvent.progress(model, context)
+        return ProgressEvent.defaultInProgressHandler(context, 0, model)
             .then(progress -> HandlerHelper.updateEmergencyContactSettings(
                 "CreateHandler",
                 proxy,

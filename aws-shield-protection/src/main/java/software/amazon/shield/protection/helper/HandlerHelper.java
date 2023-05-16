@@ -28,7 +28,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
-        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
             return ret;
         }
@@ -66,7 +66,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
-        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.progress(model, context);
+        ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
             return ret;
         }
