@@ -28,6 +28,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
+        logger.log(String.format("%s: attempting associateHealthChecks", handlerName));
         ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
             return ret;
@@ -66,6 +67,7 @@ public class HandlerHelper {
         final CallbackContext context,
         final Logger logger
     ) {
+        logger.log(String.format("%s: attempting disassociateHealthChecks", handlerName));
         ProgressEvent<ResourceModel, CallbackContext> ret = ProgressEvent.defaultInProgressHandler(context, 0, model);
         if (CollectionUtils.isNullOrEmpty(healthCheckArns)) {
             return ret;

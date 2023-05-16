@@ -156,10 +156,12 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                             }
                         })
                         .getRequestFunction(c -> c::enableApplicationLayerAutomaticResponse)
-                        .onSuccess((req, res, c, m, ctx) -> ProgressEvent.defaultSuccessHandler(m))
                         .build()
                         .initiate();
-                });
+                })
+                .then(progress -> ProgressEvent.defaultSuccessHandler(
+                    progress.getResourceModel()
+                ));
 
         if (
             createProgress.isFailed()

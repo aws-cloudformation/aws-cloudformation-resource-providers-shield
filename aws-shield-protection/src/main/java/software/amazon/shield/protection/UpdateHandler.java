@@ -75,30 +75,31 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             callbackContext,
             logger
         ).then(progress -> updateAppLayerAutoResponseConfig(
-            desiredState.getApplicationLayerAutomaticResponseConfiguration(),
-            currentState.getApplicationLayerAutomaticResponseConfiguration(),
-            currentState.getResourceArn(),
-            proxy,
-            proxyClient,
-            progress.getResourceModel(),
-            progress.getCallbackContext(),
-            logger
-        )).then(progress -> HandlerHelper.updateTagsChainable(
-            desiredState.getTags(),
-            Tag::getKey,
-            Tag::getValue,
-            currentState.getTags(),
-            Tag::getKey,
-            Tag::getValue,
-            progress.getResourceModel().getProtectionArn(),
-            "Protection",
-            "UpdateHandler",
-            proxy,
-            proxyClient,
-            progress.getResourceModel(),
-            progress.getCallbackContext(),
-            logger
-        )).then(progress -> ProgressEvent.defaultSuccessHandler(progress.getResourceModel()));
+                desiredState.getApplicationLayerAutomaticResponseConfiguration(),
+                currentState.getApplicationLayerAutomaticResponseConfiguration(),
+                currentState.getResourceArn(),
+                proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                progress.getCallbackContext(),
+                logger
+            )).then(progress -> HandlerHelper.updateTagsChainable(
+                desiredState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
+                currentState.getTags(),
+                Tag::getKey,
+                Tag::getValue,
+                progress.getResourceModel().getProtectionArn(),
+                "Protection",
+                "UpdateHandler",
+                proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                progress.getCallbackContext(),
+                logger
+            ))
+            .then(progress -> ProgressEvent.defaultSuccessHandler(progress.getResourceModel()));
     }
 
     private ProgressEvent<ResourceModel, CallbackContext> updateHealthCheckAssociation(
@@ -161,7 +162,6 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         @NonNull final CallbackContext context,
         @NonNull final Logger logger
     ) {
-
         final String desiredStatus = Optional.ofNullable(desiredConfig)
             .map(software.amazon.shield.protection.ApplicationLayerAutomaticResponseConfiguration::getStatus)
             .orElse("DISABLED");

@@ -50,9 +50,11 @@ public class CreateHandlerTest {
 
     @BeforeEach
     public void setup() {
-        proxy = spy(new AmazonWebServicesClientProxy(new LoggerProxy(),
+        proxy = spy(new AmazonWebServicesClientProxy(
+            new LoggerProxy(),
             new Credentials("accessKey", "secretKey", "token"),
-            () -> Duration.ofSeconds(600).toMillis()));
+            () -> Duration.ofSeconds(600).toMillis()
+        ));
         this.logger = mock(Logger.class);
 
         this.createHandler = new CreateHandler(mock(ShieldClient.class));
@@ -63,54 +65,122 @@ public class CreateHandlerTest {
     @Test
     public void handleRequest_Success() {
         final ResourceHandlerRequest<ResourceModel> request =
-                ResourceHandlerRequest.<ResourceModel>builder()
-                        .desiredResourceState(this.resourceModel)
-                        .nextToken(ProtectionTestData.NEXT_TOKEN)
-                        .build();
+            ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(this.resourceModel)
+                .nextToken(ProtectionTestData.NEXT_TOKEN)
+                .build();
 
         final CreateProtectionResponse createProtectionResponse =
-                CreateProtectionResponse.builder()
-                        .protectionId(ProtectionTestData.PROTECTION_ID)
-                        .build();
+            CreateProtectionResponse.builder()
+                .protectionId(ProtectionTestData.PROTECTION_ID)
+                .build();
 
         final DescribeProtectionResponse describeProtectionResponse =
-                DescribeProtectionResponse.builder()
-                        .protection(
-                                Protection.builder()
-                                        .name(ProtectionTestData.NAME_1)
-                                        .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
-                                        .protectionArn(ProtectionTestData.PROTECTION_ARN)
-                                        .id(ProtectionTestData.PROTECTION_ID)
-                                        .healthCheckIds(
-                                                ProtectionTestData.HEALTH_CHECK_ID_1,
-                                                ProtectionTestData.HEALTH_CHECK_ID_2)
-                                        .applicationLayerAutomaticResponseConfiguration(
-                                                ApplicationLayerAutomaticResponseConfiguration.builder()
-                                                        .action(
-                                                                ResponseAction.builder()
-                                                                        .block(BlockAction.builder().build())
-                                                                        .build())
-                                                        .status(ProtectionTestData.ENABLED)
-                                                        .build())
+            DescribeProtectionResponse.builder()
+                .protection(
+                    Protection.builder()
+                        .name(ProtectionTestData.NAME_1)
+                        .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
+                        .protectionArn(ProtectionTestData.PROTECTION_ARN)
+                        .id(ProtectionTestData.PROTECTION_ID)
+                        .healthCheckIds(
+                            ProtectionTestData.HEALTH_CHECK_ID_1,
+                            ProtectionTestData.HEALTH_CHECK_ID_2
+                        )
+                        .applicationLayerAutomaticResponseConfiguration(
+                            ApplicationLayerAutomaticResponseConfiguration.builder()
+                                .action(
+                                    ResponseAction.builder()
+                                        .block(BlockAction.builder().build())
                                         .build())
-                        .build();
+                                .status(ProtectionTestData.ENABLED)
+                                .build())
+                        .build())
+                .build();
 
         doReturn(createProtectionResponse)
-                .when(this.proxy)
-                .injectCredentialsAndInvokeV2(any(CreateProtectionRequest.class), any());
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(CreateProtectionRequest.class), any());
         doReturn(describeProtectionResponse)
-                .when(this.proxy)
-                .injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
 
         doReturn(AssociateHealthCheckResponse.builder().build())
-                .when(this.proxy)
-                .injectCredentialsAndInvokeV2(any(AssociateHealthCheckRequest.class), any());
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(AssociateHealthCheckRequest.class), any());
         doReturn(EnableApplicationLayerAutomaticResponseResponse.builder().build())
-                .when(this.proxy)
-                .injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any());
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(EnableApplicationLayerAutomaticResponseRequest.class), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response =
-                this.createHandler.handleRequest(this.proxy, request, null, this.logger);
+            this.createHandler.handleRequest(this.proxy, request, null, this.logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void handleRequest_noApplicationLayerAutomaticResponse() {
+        final ResourceHandlerRequest<ResourceModel> request =
+            ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(ResourceModel.builder()
+                    .name(this.resourceModel.getName())
+                    .protectionId(this.resourceModel.getProtectionId())
+                    .protectionArn(this.resourceModel.getProtectionArn())
+                    .resourceArn(this.resourceModel.getResourceArn())
+                    .tags(this.resourceModel.getTags())
+                    .healthCheckArns(this.resourceModel.getHealthCheckArns())
+                    .build()
+                )
+                .build();
+
+        final CreateProtectionResponse createProtectionResponse =
+            CreateProtectionResponse.builder()
+                .protectionId(ProtectionTestData.PROTECTION_ID)
+                .build();
+
+        final DescribeProtectionResponse describeProtectionResponse =
+            DescribeProtectionResponse.builder()
+                .protection(
+                    Protection.builder()
+                        .name(ProtectionTestData.NAME_1)
+                        .resourceArn(ProtectionTestData.RESOURCE_ARN_1)
+                        .protectionArn(ProtectionTestData.PROTECTION_ARN)
+                        .id(ProtectionTestData.PROTECTION_ID)
+                        .healthCheckIds(
+                            ProtectionTestData.HEALTH_CHECK_ID_1,
+                            ProtectionTestData.HEALTH_CHECK_ID_2
+                        )
+                        .applicationLayerAutomaticResponseConfiguration(
+                            ApplicationLayerAutomaticResponseConfiguration.builder()
+                                .action(
+                                    ResponseAction.builder()
+                                        .block(BlockAction.builder().build())
+                                        .build())
+                                .status(ProtectionTestData.ENABLED)
+                                .build())
+                        .build())
+                .build();
+
+        doReturn(createProtectionResponse)
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(CreateProtectionRequest.class), any());
+        doReturn(describeProtectionResponse)
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(DescribeProtectionRequest.class), any());
+
+        doReturn(AssociateHealthCheckResponse.builder().build())
+            .when(this.proxy)
+            .injectCredentialsAndInvokeV2(any(AssociateHealthCheckRequest.class), any());
+
+        final ProgressEvent<ResourceModel, CallbackContext> response =
+            this.createHandler.handleRequest(this.proxy, request, null, this.logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
