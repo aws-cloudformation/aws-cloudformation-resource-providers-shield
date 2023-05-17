@@ -104,7 +104,7 @@ public class ShieldAPIChainableRemoteCall<
     ) {
         final String callGraph = this.getCallGraph();
         if (isRateExceededException(e)) {
-            logger.log(String.format("[WARN] Rate exceeded while requesting %s: %s", callGraph, e.toString()));
+            logger.log(String.format("[WARN] Rate exceeded Requesting %s: %s", callGraph, e.toString()));
             // In theory returning throttling would be most ideal
             // however, CFN only retry errors to a certain extent
             // for Shield, long retries are essential due to low api rate throttle limits.
@@ -152,7 +152,7 @@ public class ShieldAPIChainableRemoteCall<
                 );
             } catch (ShieldException e) {
                 if (this.isRateExceededException(e)) {
-                    logger.log(String.format("[WARN] Rate exceeded while stabilizing %s: %s", callGraph, e));
+                    logger.log(String.format("[WARN] Rate exceeded Stabilizing %s: %s", callGraph, e));
                     return false;
                 }
                 throw e;
