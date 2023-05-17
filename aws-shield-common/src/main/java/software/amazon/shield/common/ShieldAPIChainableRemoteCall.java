@@ -79,6 +79,7 @@ public class ShieldAPIChainableRemoteCall<
     }
 
     private ResponseT makeServiceCall(RequestT request, ProxyClient<ShieldClient> proxyClient) {
+        // self throttling, to remedy low Shield API rate limits.
         if (JITTER_SECONDS > 0) {
             try {
                 TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(JITTER_SECONDS * 1000));
@@ -104,14 +105,25 @@ public class ShieldAPIChainableRemoteCall<
         final String callGraph = this.getCallGraph();
         if (isRateExceededException(e)) {
             logger.log(String.format("[WARN] Rate exceeded while requesting %s: %s", callGraph, e.toString()));
-            final ProgressEvent<ResourceModelT, CallbackContextT> progress = ProgressEvent.failed(
-                model,
+            // In theory returning throttling would be most ideal
+            // however, CFN only retry errors to a certain extent
+            // for Shield, long retries are essential due to low api rate throttle limits.
+            // we return in_progress instead of throttling to get a third chance for the handler.
+
+            // final ProgressEvent<ResourceModelT, CallbackContextT> progress = ProgressEvent.failed(
+            //     model,
+            //     context,
+            //     HandlerErrorCode.Throttling,
+            //     e.getMessage()
+            // );
+            // progress.setCallbackDelaySeconds(RATE_EXCEEDED_DELAY_SEC);
+            // return progress;
+            return ProgressEvent.defaultInProgressHandler(
                 context,
-                HandlerErrorCode.Throttling,
-                e.getMessage()
+                RATE_EXCEEDED_DELAY_SEC,
+                model
             );
-            progress.setCallbackDelaySeconds(RATE_EXCEEDED_DELAY_SEC);
-            return progress;
+
         }
         logger.log(String.format("[Error] Failed Requesting %s: %s", callGraph, e.toString()));
         return ProgressEvent.failed(
