@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.shield.model.ResponseAction;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
@@ -186,7 +187,10 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 .onSuccess((req, res, c, m, ctx) -> ProgressEvent.failed(
                     m,
                     ctx,
-                    createProgress.getErrorCode(),
+                    // NotFound can only appear when Subscription does not exist. Convert to InvalidRequest in this case.
+                    createProgress.getErrorCode().equals(HandlerErrorCode.NotFound)
+                        ? HandlerErrorCode.InvalidRequest
+                        : createProgress.getErrorCode(),
                     createProgress.getMessage()
                 ))
                 .build()
