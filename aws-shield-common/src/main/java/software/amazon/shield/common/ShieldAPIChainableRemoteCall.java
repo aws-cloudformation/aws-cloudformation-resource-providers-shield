@@ -30,9 +30,11 @@ public class ShieldAPIChainableRemoteCall<
     private static final String RATE_EXCEEDED_MSG = "rate exceeded";
     private static final int RATE_EXCEEDED_DELAY_SEC = 5;
     public static int JITTER_SECONDS = 2;
-    public final String resourceType;
-    public final String handlerName;
 
+    public @NonNull
+    final String resourceType;
+    public @NonNull
+    final String handlerName;
     public @NonNull
     final String apiName;
 
@@ -51,6 +53,11 @@ public class ShieldAPIChainableRemoteCall<
     final Function<ResourceModelT, RequestT> translateToServiceRequest;
     public @NonNull
     final Function<ShieldClient, Function<RequestT, ResponseT>> getRequestFunction;
+
+    /**
+     * return ERROR with Throttling error code instead of IN_PROGRESS on rate exceeded.
+     */
+    public final boolean rateExceededIsCritical;
 
     /**
      * watch out when using stabilize.
@@ -109,21 +116,30 @@ public class ShieldAPIChainableRemoteCall<
             // however, CFN only retry errors to a certain extent
             // for Shield, long retries are essential due to low api rate throttle limits.
             // we return in_progress instead of throttling to get a third chance for the handler.
+            //
+            // However we still need to return throttling in certain cases. Namely for CreateHandler:
+            // https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-test-contract.html
+            // > Every model MUST include the primaryIdentifier. The only exception is if the first progress event is
+            // > FAILED, and the resource hasn’t yet been created.
 
-            // final ProgressEvent<ResourceModelT, CallbackContextT> progress = ProgressEvent.failed(
-            //     model,
-            //     context,
-            //     HandlerErrorCode.Throttling,
-            //     e.getMessage()
-            // );
-            // progress.setCallbackDelaySeconds(RATE_EXCEEDED_DELAY_SEC);
-            // return progress;
-            return ProgressEvent.defaultInProgressHandler(
-                context,
-                RATE_EXCEEDED_DELAY_SEC,
-                model
-            );
-
+            final ProgressEvent<ResourceModelT, CallbackContextT> progress;
+            if (this.rateExceededIsCritical) {
+                progress = ProgressEvent.failed(
+                    model,
+                    context,
+                    HandlerErrorCode.Throttling,
+                    e.getMessage()
+                );
+                progress.setCallbackDelaySeconds(RATE_EXCEEDED_DELAY_SEC);
+            } else {
+                progress = ProgressEvent.defaultInProgressHandler(
+                    context,
+                    RATE_EXCEEDED_DELAY_SEC,
+                    model
+                );
+                progress.setMessage(e.getMessage());
+            }
+            return progress;
         }
         logger.log(String.format("[Error] Failed Requesting %s: %s", callGraph, e.toString()));
         return ProgressEvent.failed(

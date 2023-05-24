@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.shield.model.DescribeProtectionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeProtectionResponse;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseRequest;
 import software.amazon.awssdk.services.shield.model.EnableApplicationLayerAutomaticResponseResponse;
+import software.amazon.awssdk.services.shield.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.shield.model.ResponseAction;
 import software.amazon.awssdk.services.shield.model.Tag;
 import software.amazon.awssdk.utils.CollectionUtils;
@@ -76,36 +77,36 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     return createProtectionRequestBuilder.build();
                 })
                 .getRequestFunction(c -> c::createProtection)
+                .rateExceededIsCritical(true)
                 .onSuccess((req, res, c, m, ctx) -> {
                     logger.log(String.format("CreateHandler: new protection created id = %s", res.protectionId()));
                     m.setProtectionId(res.protectionId());
+                    final String protectionArn = String.format(
+                        "arn:aws:shield::%s:protection/%s",
+                        request.getAwsAccountId(),
+                        res.protectionId()
+                    );
+                    logger.log(String.format("CreateHandler: new protection created arn = %s", protectionArn));
+                    m.setProtectionArn(protectionArn);
                     return null;
+                })
+                .stabilize((c, m, ctx) -> {
+                    // wait for ddb eventually consistent.
+                    // see https://issues.amazon.com/issues/Shield-21240
+                    try {
+                        c.injectCredentialsAndInvokeV2(
+                            DescribeProtectionRequest.builder()
+                                .protectionId(m.getProtectionId())
+                                .build(),
+                            c.client()::describeProtection
+                        );
+                    } catch (ResourceNotFoundException ignored) {
+                        return false;
+                    }
+                    return true;
                 })
                 .build()
                 .initiate()
-                .then(progress -> ShieldAPIChainableRemoteCall.<ResourceModel, CallbackContext,
-                        DescribeProtectionRequest,
-                        DescribeProtectionResponse>builder()
-                    .resourceType("Protection")
-                    .handlerName("CreateHandler")
-                    .apiName("describeProtection")
-                    .proxy(proxy)
-                    .proxyClient(proxyClient)
-                    .model(progress.getResourceModel())
-                    .context(progress.getCallbackContext())
-                    .logger(logger)
-                    .translateToServiceRequest(m -> DescribeProtectionRequest.builder()
-                        .protectionId(m.getProtectionId())
-                        .build())
-                    .getRequestFunction(c -> c::describeProtection)
-                    .onSuccess((req, res, c, m, ctx) -> {
-                        final String protectionArn = res.protection().protectionArn();
-                        logger.log(String.format("CreateHandler: new protection created arn = %s", protectionArn));
-                        m.setProtectionArn(protectionArn);
-                        return null;
-                    })
-                    .build()
-                    .initiate())
                 .then(progress -> associateHealthChecks(
                     "CreateHandler",
                     progress.getResourceModel().getProtectionId(),
@@ -164,6 +165,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     progress.getResourceModel()
                 ));
 
+        // delete protection if it was created but the rest of the workflow failed
         if (
             createProgress.isFailed()
                 && !HandlerHelper.isRetriableErrorCode(createProgress.getErrorCode())
@@ -187,7 +189,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 .onSuccess((req, res, c, m, ctx) -> ProgressEvent.failed(
                     m,
                     ctx,
-                    // NotFound can only appear when Subscription does not exist. Convert to InvalidRequest in this case.
+                    // NotFound can only appear when Subscription does not exist. Convert to InvalidRequest in this
+                    // case.
                     createProgress.getErrorCode().equals(HandlerErrorCode.NotFound)
                         ? HandlerErrorCode.InvalidRequest
                         : createProgress.getErrorCode(),

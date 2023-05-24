@@ -79,6 +79,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 return createProtectionGroupRequestBuilder.build();
             })
             .getRequestFunction(c -> c::createProtectionGroup)
+            .rateExceededIsCritical(true)
             .onSuccess((req, res, c, m, ctx) -> {
                 m.setProtectionGroupArn(String.format(
                     "arn:aws:shield::%s:protection-group/%s",

@@ -7,6 +7,7 @@ import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
+import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.shield.common.CustomerAPIClientBuilder;
 import software.amazon.shield.drtaccess.helper.HandlerHelper;
@@ -34,12 +35,15 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             )
         );
         callbackContext = callbackContext == null ? new CallbackContext() : callbackContext;
+        final ProxyClient<ShieldClient> proxyClient = proxy.newProxy(() -> this.shieldClient);
+        final ResourceModel model = request.getDesiredResourceState();
+        model.setAccountId(request.getAwsAccountId());
 
         return HandlerHelper.describeDrtAccessSetContext(
                 "CreateHandler",
                 proxy,
-                proxy.newProxy(() -> shieldClient),
-                request.getDesiredResourceState(),
+                proxyClient,
+                model,
                 callbackContext,
                 logger
             ).then(progress -> {
@@ -69,7 +73,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 return HandlerHelper.associateDrtRole(
                     "CreateHandler",
                     proxy,
-                    proxy.newProxy(() -> shieldClient),
+                    proxyClient,
                     progress.getResourceModel(),
                     progress.getResourceModel().getRoleArn(),
                     progress.getCallbackContext(),
@@ -79,16 +83,12 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             .then(progress -> HandlerHelper.associateDrtLogBucketList(
                 "CreateHandler",
                 proxy,
-                proxy.newProxy(() -> shieldClient),
+                proxyClient,
                 progress.getResourceModel(),
                 progress.getResourceModel().getLogBucketList(),
                 progress.getCallbackContext(),
                 logger
             ))
-            .then(progress -> {
-                ResourceModel model = progress.getResourceModel();
-                model.setAccountId(request.getAwsAccountId());
-                return ProgressEvent.defaultSuccessHandler(model);
-            });
+            .then(progress -> ProgressEvent.defaultSuccessHandler(model));
     }
 }

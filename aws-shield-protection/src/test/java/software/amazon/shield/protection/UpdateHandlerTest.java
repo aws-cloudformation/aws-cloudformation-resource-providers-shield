@@ -81,6 +81,7 @@ public class UpdateHandlerTest {
 
         final ResourceHandlerRequest<ResourceModel> request =
             ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProtectionTestData.ACCOUNT_ID)
                 .previousResourceState(ProtectionTestData.RESOURCE_MODEL_1.toBuilder()
                     .healthCheckArns(null)
                     .applicationLayerAutomaticResponseConfiguration(null)
