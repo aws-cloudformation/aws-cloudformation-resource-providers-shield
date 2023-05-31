@@ -1,12 +1,15 @@
-## My Project
+## AWS Shield Cloudformation Resource Provider
 
-First change
-TODO: Fill this README out!
+[documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/AWS_Shield.html)
 
-Be sure to:
+This repository contains implementation for the following Cloudformation resource types:
+- AWS::Shield::Protection
+- AWS::Shield::ProtectionGroup
+- AWS::Shield::DRTAccess
+- AWS::Shield::ProactiveEngagement
 
-* Change the title in this README
-* Edit your repository description on GitHub
+## Development Guide
+See CloudFormation [developer guide](https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-types.html) documentation for more details.
 
 ## Security
 
@@ -15,4 +18,3 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This project is licensed under the Apache-2.0 License.
-
