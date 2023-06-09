@@ -58,7 +58,6 @@ public class CreateHandlerTest {
         this.logger = mock(Logger.class);
 
         this.createHandler = new CreateHandler(mock(ShieldClient.class));
-        this.resourceModel = ProtectionTestData.RESOURCE_MODEL_1;
         ShieldAPIChainableRemoteCall.JITTER_SECONDS = 0;
     }
 
@@ -66,7 +65,7 @@ public class CreateHandlerTest {
     public void handleRequest_Success() {
         final ResourceHandlerRequest<ResourceModel> request =
             ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(this.resourceModel)
+                .desiredResourceState(ProtectionTestData.RESOURCE_MODEL_1.toBuilder().build())
                 .nextToken(ProtectionTestData.NEXT_TOKEN)
                 .build();
 
@@ -130,12 +129,12 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request =
             ResourceHandlerRequest.<ResourceModel>builder()
                 .desiredResourceState(ResourceModel.builder()
-                    .name(this.resourceModel.getName())
-                    .protectionId(this.resourceModel.getProtectionId())
-                    .protectionArn(this.resourceModel.getProtectionArn())
-                    .resourceArn(this.resourceModel.getResourceArn())
-                    .tags(this.resourceModel.getTags())
-                    .healthCheckArns(this.resourceModel.getHealthCheckArns())
+                    .name(ProtectionTestData.RESOURCE_MODEL_1.getName())
+                    .protectionId(ProtectionTestData.RESOURCE_MODEL_1.getProtectionId())
+                    .protectionArn(ProtectionTestData.RESOURCE_MODEL_1.getProtectionArn())
+                    .resourceArn(ProtectionTestData.RESOURCE_MODEL_1.getResourceArn())
+                    .tags(ProtectionTestData.RESOURCE_MODEL_1.getTags())
+                    .healthCheckArns(ProtectionTestData.RESOURCE_MODEL_1.getHealthCheckArns())
                     .build()
                 )
                 .build();
