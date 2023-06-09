@@ -36,7 +36,8 @@
       "permissions": [
         "shield:DescribeDRTAccess",
         "shield:AssociateDRTLogBucket",
-        "shield:AssociateDRTRole"
+        "shield:AssociateDRTRole",
+        "iam:PassRole"
       ]
     },
     "delete": {
@@ -57,7 +58,8 @@
         "shield:AssociateDRTLogBucket",
         "shield:AssociateDRTRole",
         "shield:DisassociateDRTLogBucket",
-        "shield:DisassociateDRTRole"
+        "shield:DisassociateDRTRole",
+        "iam:PassRole"
       ]
     },
     "list": {
