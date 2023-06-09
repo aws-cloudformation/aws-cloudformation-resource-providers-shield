@@ -38,7 +38,8 @@
         "shield:AssociateDRTLogBucket",
         "shield:AssociateDRTRole",
         "iam:PassRole",
-        "iam:GetRole"
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies"
       ]
     },
     "delete": {
@@ -47,7 +48,8 @@
         "shield:DisassociateDRTLogBucket",
         "shield:DisassociateDRTRole",
         "iam:PassRole",
-        "iam:GetRole"
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies"
       ]
     },
     "read": {
@@ -63,7 +65,8 @@
         "shield:DisassociateDRTLogBucket",
         "shield:DisassociateDRTRole",
         "iam:PassRole",
-        "iam:GetRole"
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies"
       ]
     },
     "list": {
