@@ -71,7 +71,8 @@
         "shield:DescribeSubscription",
         "shield:DescribeEmergencyContactSettings",
         "shield:AssociateProactiveEngagementDetails",
-        "shield:UpdateEmergencyContactSettings"
+        "shield:UpdateEmergencyContactSettings",
+        "shield:EnableProactiveEngagement"
       ]
     },
     "delete": {

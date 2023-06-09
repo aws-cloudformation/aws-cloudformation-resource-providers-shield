@@ -37,14 +37,17 @@
         "shield:DescribeDRTAccess",
         "shield:AssociateDRTLogBucket",
         "shield:AssociateDRTRole",
-        "iam:PassRole"
+        "iam:PassRole",
+        "iam:GetRole"
       ]
     },
     "delete": {
       "permissions": [
         "shield:DescribeDRTAccess",
         "shield:DisassociateDRTLogBucket",
-        "shield:DisassociateDRTRole"
+        "shield:DisassociateDRTRole",
+        "iam:PassRole",
+        "iam:GetRole"
       ]
     },
     "read": {
@@ -59,7 +62,8 @@
         "shield:AssociateDRTRole",
         "shield:DisassociateDRTLogBucket",
         "shield:DisassociateDRTRole",
-        "iam:PassRole"
+        "iam:PassRole",
+        "iam:GetRole"
       ]
     },
     "list": {
