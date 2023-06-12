@@ -41,7 +41,7 @@
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
         "s3:GetBucketPolicy",
-        "s3:SetBucketPolicy"
+        "s3:PutBucketPolicy"
       ]
     },
     "delete": {
@@ -53,7 +53,7 @@
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
         "s3:GetBucketPolicy",
-        "s3:SetBucketPolicy",
+        "s3:PutBucketPolicy",
         "s3:DeleteBucketPolicy"
       ]
     },
@@ -73,7 +73,7 @@
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
         "s3:GetBucketPolicy",
-        "s3:SetBucketPolicy",
+        "s3:PutBucketPolicy",
         "s3:DeleteBucketPolicy"
       ]
     },
