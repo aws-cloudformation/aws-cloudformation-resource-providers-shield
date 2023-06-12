@@ -39,7 +39,8 @@
         "shield:AssociateDRTRole",
         "iam:PassRole",
         "iam:GetRole",
-        "iam:ListAttachedRolePolicies"
+        "iam:ListAttachedRolePolicies",
+        "s3:GetBucketPolicy"
       ]
     },
     "delete": {
@@ -49,7 +50,8 @@
         "shield:DisassociateDRTRole",
         "iam:PassRole",
         "iam:GetRole",
-        "iam:ListAttachedRolePolicies"
+        "iam:ListAttachedRolePolicies",
+        "s3:GetBucketPolicy"
       ]
     },
     "read": {
@@ -66,7 +68,8 @@
         "shield:DisassociateDRTRole",
         "iam:PassRole",
         "iam:GetRole",
-        "iam:ListAttachedRolePolicies"
+        "iam:ListAttachedRolePolicies",
+        "s3:GetBucketPolicy"
       ]
     },
     "list": {
