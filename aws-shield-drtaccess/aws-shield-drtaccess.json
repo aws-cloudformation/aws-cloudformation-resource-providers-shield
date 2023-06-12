@@ -40,7 +40,8 @@
         "iam:PassRole",
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
-        "s3:GetBucketPolicy"
+        "s3:GetBucketPolicy",
+        "s3:SetBucketPolicy"
       ]
     },
     "delete": {
@@ -51,7 +52,9 @@
         "iam:PassRole",
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
-        "s3:GetBucketPolicy"
+        "s3:GetBucketPolicy",
+        "s3:SetBucketPolicy",
+        "s3:DeleteBucketPolicy"
       ]
     },
     "read": {
@@ -69,7 +72,9 @@
         "iam:PassRole",
         "iam:GetRole",
         "iam:ListAttachedRolePolicies",
-        "s3:GetBucketPolicy"
+        "s3:GetBucketPolicy",
+        "s3:SetBucketPolicy",
+        "s3:DeleteBucketPolicy"
       ]
     },
     "list": {
