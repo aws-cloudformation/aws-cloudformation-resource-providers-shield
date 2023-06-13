@@ -145,6 +145,7 @@
         "elasticloadbalancing:DescribeLoadBalancers",
         "route53:GetHealthCheck",
         "iam:GetRole",
+        "iam:CreateServiceLinkedRole",
         "wafv2:GetWebACLForResource",
         "wafv2:GetWebACL"
       ]
@@ -174,6 +175,7 @@
         "shield:UntagResource",
         "route53:GetHealthCheck",
         "iam:GetRole",
+        "iam:CreateServiceLinkedRole",
         "wafv2:GetWebACLForResource",
         "wafv2:GetWebACL"
       ]
