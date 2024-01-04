@@ -103,31 +103,9 @@ public class CreateHandlerTest {
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
             ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
 
-        model = ResourceModel.builder()
-            .accountId(ProactiveEngagementTestHelper.accountId)
-            .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
-            .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
-            .build();
+        handleCreateWithEnabled();
 
-        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-            .awsAccountId(ProactiveEngagementTestHelper.accountId)
-            .desiredResourceState(model)
-            .build();
-
-        final ProgressEvent<ResourceModel, CallbackContext> response
-            = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
-        assertThat(response.getCallbackContext()).isNull();
-        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
-        assertThat(response.getResourceModel()
-            .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
-        assertThat(response.getResourceModel()
-            .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
-            ProactiveEngagementTestHelper.emergencyContactList));
-        assertThat(response.getMessage()).isNull();
-        assertThat(response.getErrorCode()).isNull();
+        handleCreateWithDisabled();
     }
 
     @Test
@@ -166,5 +144,61 @@ public class CreateHandlerTest {
         assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.ResourceConflict);
         assertThat(response.getMessage()).containsIgnoringCase(
             "Proactive engagement is already configured on the account.");
+    }
+
+    public void handleCreateWithEnabled() {
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED.toString())
+                .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.ENABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
+                ProactiveEngagementTestHelper.emergencyContactList));
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+    }
+
+    public void handleCreateWithDisabled() {
+        model = ResourceModel.builder()
+                .accountId(ProactiveEngagementTestHelper.accountId)
+                .proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED.toString())
+                .emergencyContactList(HandlerHelper.convertSDKEmergencyContactList(ProactiveEngagementTestHelper.emergencyContactList))
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .awsAccountId(ProactiveEngagementTestHelper.accountId)
+                .desiredResourceState(model)
+                .build();
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = createHandler.handleRequest(proxy, request, callbackContext, proxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()
+                .getProactiveEngagementStatus()).isEqualTo(ProactiveEngagementStatus.DISABLED.toString());
+        assertThat(response.getResourceModel()
+                .getEmergencyContactList()).isEqualTo(HandlerHelper.convertSDKEmergencyContactList(
+                ProactiveEngagementTestHelper.emergencyContactList));
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
     }
 }
