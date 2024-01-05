@@ -117,14 +117,14 @@ public class CreateHandler extends BaseHandlerStd {
                         .build()
                         .initiate();
 
-                } else {
-                    return reconfigProactiveEngagement(proxy,
-                        proxyClient,
-                        progress.getResourceModel(),
-                        progress.getCallbackContext(),
-                        logger);
                 }
+                return progress;
             })
+            .then(progress -> reconfigProactiveEngagement(proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                progress.getCallbackContext(),
+                logger))
             .then(progress -> {
                 logger.log(String.format("Succeed handling create request: %s",
                     progress.getResourceModel().getAccountId()));

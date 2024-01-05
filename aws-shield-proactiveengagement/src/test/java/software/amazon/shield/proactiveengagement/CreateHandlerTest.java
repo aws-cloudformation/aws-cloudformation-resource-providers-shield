@@ -1,7 +1,10 @@
 package software.amazon.shield.proactiveengagement;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,8 +17,14 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
+import software.amazon.awssdk.services.shield.model.DisableProactiveEngagementRequest;
+import software.amazon.awssdk.services.shield.model.DisableProactiveEngagementResponse;
+import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementRequest;
+import software.amazon.awssdk.services.shield.model.EnableProactiveEngagementResponse;
 import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsRequest;
+import software.amazon.awssdk.services.shield.model.UpdateEmergencyContactSettingsResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
@@ -33,6 +42,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
 import static software.amazon.shield.proactiveengagement.helper.ProactiveEngagementTestHelper.MOCK_CREDENTIALS;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,39 +80,81 @@ public class CreateHandlerTest {
     }
 
     @Test
-    public void handleRequest_SimpleSuccess() {
+    public void handleRequest_SimpleSuccess_With_ProactiveEngagementStatus_Null() {
         // Mock describe subscription
         final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
-            .subscription(Subscription.builder().build())
-            .build();
+                .subscription(Subscription.builder().build())
+                .build();
         final DescribeSubscriptionResponse describeSubscriptionResponse2 = DescribeSubscriptionResponse.builder()
-            .subscription(Subscription.builder()
-                .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
-                .build())
-            .build();
+                .subscription(Subscription.builder()
+                        .proactiveEngagementStatus(ProactiveEngagementStatus.ENABLED)
+                        .build())
+                .build();
         doReturn(describeSubscriptionResponse).doReturn(describeSubscriptionResponse2)
-            .when(proxy)
-            .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+                .when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
 
         // Mock describe emergency contact list
         final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
-            DescribeEmergencyContactSettingsResponse.builder()
-                .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
-                .build();
+                DescribeEmergencyContactSettingsResponse.builder()
+                        .emergencyContactList(ProactiveEngagementTestHelper.emergencyContactList)
+                        .build();
         doReturn(describeEmergencyContactSettingsResponse).when(proxy)
-            .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
 
         // Mock associate proactive engagement with account
         final AssociateProactiveEngagementDetailsResponse associateProactiveEngagementDetailsResponse =
-            AssociateProactiveEngagementDetailsResponse.builder()
-                .build();
+                AssociateProactiveEngagementDetailsResponse.builder()
+                        .build();
 
         doReturn(associateProactiveEngagementDetailsResponse).when(proxy)
-            .injectCredentialsAndInvokeV2(any(AssociateProactiveEngagementDetailsRequest.class), any());
+                .injectCredentialsAndInvokeV2(any(AssociateProactiveEngagementDetailsRequest.class), any());
 
         // Mock change propagation
         final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
-            ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
+                ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
+
+        handleCreateWithEnabled();
+
+        handleCreateWithDisabled();
+    }
+
+    @Test
+    public void handleRequest_SimpleSuccess_Already_Configured() {
+        // Mock describe subscription
+        final DescribeSubscriptionResponse describeSubscriptionResponse = DescribeSubscriptionResponse.builder()
+                .subscription(Subscription.builder().proactiveEngagementStatus(ProactiveEngagementStatus.DISABLED).build()).build();
+        doReturn(describeSubscriptionResponse)
+                .when(proxy).injectCredentialsAndInvokeV2(any(DescribeSubscriptionRequest.class), any());
+
+
+        // Mock describe emergency contact list
+        final DescribeEmergencyContactSettingsResponse describeEmergencyContactSettingsResponse =
+                DescribeEmergencyContactSettingsResponse.builder()
+                        .build();
+        doReturn(describeEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DescribeEmergencyContactSettingsRequest.class), any());
+
+        final UpdateEmergencyContactSettingsResponse updateEmergencyContactSettingsResponse =
+                UpdateEmergencyContactSettingsResponse.builder().build();
+
+        doReturn(updateEmergencyContactSettingsResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(UpdateEmergencyContactSettingsRequest.class), any());
+
+        final EnableProactiveEngagementResponse enableProactiveEngagementResponse =
+                EnableProactiveEngagementResponse.builder().build();
+
+        doReturn(enableProactiveEngagementResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(EnableProactiveEngagementRequest.class), any());
+
+        final DisableProactiveEngagementResponse disableProactiveEngagementResponse =
+                DisableProactiveEngagementResponse.builder().build();
+
+        doReturn(disableProactiveEngagementResponse).when(proxy)
+                .injectCredentialsAndInvokeV2(any(DisableProactiveEngagementRequest.class), any());
+        // Mock change propagation
+        final ProgressEvent<ResourceModel, CallbackContext> inProgressEvent =
+                ProgressEvent.defaultInProgressHandler(callbackContext, 0, model);
 
         handleCreateWithEnabled();
 
