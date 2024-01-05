@@ -7,6 +7,7 @@ import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSett
 import software.amazon.awssdk.services.shield.model.DescribeEmergencyContactSettingsResponse;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionRequest;
 import software.amazon.awssdk.services.shield.model.DescribeSubscriptionResponse;
+import software.amazon.awssdk.services.shield.model.ProactiveEngagementStatus;
 import software.amazon.awssdk.services.shield.model.Subscription;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
@@ -116,14 +117,14 @@ public class CreateHandler extends BaseHandlerStd {
                         .build()
                         .initiate();
 
-                } else {
-                    return reconfigProactiveEngagement(proxy,
-                        proxyClient,
-                        progress.getResourceModel(),
-                        progress.getCallbackContext(),
-                        logger);
                 }
+                return progress;
             })
+            .then(progress -> reconfigProactiveEngagement(proxy,
+                proxyClient,
+                progress.getResourceModel(),
+                progress.getCallbackContext(),
+                logger))
             .then(progress -> {
                 logger.log(String.format("Succeed handling create request: %s",
                     progress.getResourceModel().getAccountId()));
@@ -138,20 +139,29 @@ public class CreateHandler extends BaseHandlerStd {
         final CallbackContext context,
         final Logger logger) {
         return ProgressEvent.defaultInProgressHandler(context, 0, model)
-            .then(progress -> HandlerHelper.updateEmergencyContactSettings(
-                "CreateHandler",
-                HandlerHelper.convertCFNEmergencyContactList(progress.getResourceModel().getEmergencyContactList()),
-                proxy,
-                proxyClient,
-                model,
-                context,
-                logger))
-            .then(progress -> HandlerHelper.enableProactiveEngagement(
-                "CreateHandler",
-                proxy,
-                proxyClient,
-                model,
-                context,
-                logger));
+                .then(progress -> HandlerHelper.updateEmergencyContactSettings(
+                        "CreateHandler",
+                        HandlerHelper.convertCFNEmergencyContactList(progress.getResourceModel()
+                                .getEmergencyContactList()),
+                        proxy,
+                        proxyClient,
+                        model,
+                        context,
+                        logger))
+                .then(progress ->
+                        progress.getResourceModel()
+                                .getProactiveEngagementStatus().equals(ProactiveEngagementStatus.ENABLED.toString())
+                                ? HandlerHelper.enableProactiveEngagement("CreateHandler",
+                                        proxy,
+                                        proxyClient,
+                                        model,
+                                        context,
+                                        logger)
+                                : HandlerHelper.disableProactiveEngagement("CreateHandler",
+                                        proxy,
+                                        proxyClient,
+                                        model,
+                                        context,
+                                        logger));
     }
 }
